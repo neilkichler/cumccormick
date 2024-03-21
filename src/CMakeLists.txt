@@ -24,6 +24,15 @@ source_group(
 
 include(FetchContent)
 FetchContent_Declare(
+  cuinterval
+  GIT_REPOSITORY git@github.com:neilkichler/cuinterval.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(cuinterval)
+
+target_link_libraries(cumccormick PRIVATE cuinterval)
+
+FetchContent_Declare(
   PackageProject
   GIT_REPOSITORY https://github.com/TheLartians/PackageProject.cmake.git
   GIT_TAG v1.11.2
