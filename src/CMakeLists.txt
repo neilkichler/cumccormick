@@ -30,7 +30,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cuinterval)
 
-target_link_libraries(cumccormick PRIVATE cuinterval)
+target_link_libraries(cumccormick PUBLIC cuinterval)
 
 FetchContent_Declare(
   PackageProject
@@ -46,4 +46,5 @@ packageProject(
     INCLUDE_DIR ${INCLUDE_PATH}
     INCLUDE_DESTINATION include/${PROJECT_NAME}-${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
+    DEPENDENCIES cuinterval
 )

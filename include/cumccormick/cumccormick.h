@@ -1,7 +1,7 @@
-#ifndef CUMCCORMICK_CUH
-#define CUMCCORMICK_CUH
+#ifndef CUMCCORMICK_H
+#define CUMCCORMICK_H
 
-#include <cumccormick/arithmetic/basic.cuh>
+// #include <cumccormick/arithmetic/basic.cuh>
 #include <cumccormick/arithmetic/mccormick.h>
 
-#endif // CUMCCORMICK_CUH
+#endif // CUMCCORMICK_H

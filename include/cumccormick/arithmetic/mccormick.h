@@ -1,4 +1,14 @@
 #ifndef CUMCCORMICK_ARITHMETIC_MCCORMICK_H
 #define CUMCCORMICK_ARITHMETIC_MCCORMICK_H
 
+#include <cuinterval/arithmetic/interval.h>
+
+template<typename T, typename I = interval<T>>
+struct mccormick
+{
+    T cv;   // convex underestimation
+    T cc;   // concave overestimation
+    I box;  // interval bounds
+};
+
 #endif // CUMCCORMICK_ARITHMETIC_MCCORMICK_H
