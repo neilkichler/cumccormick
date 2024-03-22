@@ -35,6 +35,22 @@ inline __device__ mc<T> mul(T a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> sqr(mc<T> x)
+{
+    // since sqr is convex we do not have to find the midpoints.
+    // return { .cv  = sqr(x.cv, x.cv),
+    //          .cc  = (inf(x.box) + sup(x.box)) * x.cc - inf(x.box) * sup(x.box),
+    //          .box = sqr(x.box) };
+
+    using namespace intrinsic;
+
+    T cc = sub_up(mul_up(add_up(inf(x.box),sup(x.box)), x.cc), mul_up(inf(x.box),sup(x.box)));
+    return { .cv  = mul_down(x.cv, x.cv),
+             .cc  = cc,
+             .box = sqr(x.box) };
+}
+
+template<typename T>
 inline __device__ mc<T> operator+(mc<T> a, mc<T> b)
 {
     return add(a, b);
