@@ -1,8 +1,8 @@
 #ifndef CUMCCORMICK_ARITHMETIC_BASIC_CUH
 #define CUMCCORMICK_ARITHMETIC_BASIC_CUH
 
-#include <cuinterval/arithmetic/intrinsic.cuh>
 #include <cuinterval/arithmetic/basic.cuh>
+#include <cuinterval/arithmetic/intrinsic.cuh>
 
 #include "mccormick.h"
 
@@ -35,6 +35,15 @@ inline __device__ mc<T> mul(T a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> div(mc<T> a, T b)
+{
+    bool is_neg = b < static_cast<T>(0);
+    return { .cv  = intrinsic::div_down(is_neg ? a.cc : a.cv, b),
+             .cc  = intrinsic::div_up(is_neg ? a.cv : a.cc, b),
+             .box = a.box / b };
+}
+
+template<typename T>
 inline __device__ mc<T> sqr(mc<T> x)
 {
     // since sqr is convex we do not have to find the midpoints.
@@ -44,10 +53,25 @@ inline __device__ mc<T> sqr(mc<T> x)
 
     using namespace intrinsic;
 
-    T cc = sub_up(mul_up(add_up(inf(x.box),sup(x.box)), x.cc), mul_up(inf(x.box),sup(x.box)));
+    T cc = sub_up(mul_up(add_up(inf(x.box), sup(x.box)), x.cc), mul_up(inf(x.box), sup(x.box)));
     return { .cv  = mul_down(x.cv, x.cv),
              .cc  = cc,
              .box = sqr(x.box) };
+}
+
+template<typename T>
+inline __device__ mc<T> exp(mc<T> x)
+{
+    using namespace intrinsic;
+    T r = is_singleton(x.box)
+        ? div_up(sub_up(exp(sup(x.box)), exp(inf(x.box))),
+      (sub_down(sup(x.box), inf(x.box))))
+        : static_cast<T>(0);
+    T cc = exp(inf(x.box)) + r * exp(x.cc);
+
+    return { .cv  = intrinsic::next_after(exp(x.cv), static_cast<T>(0)),
+             .cc  = cc,
+             .box = exp(x.box) };
 }
 
 template<typename T>
@@ -72,6 +96,12 @@ template<typename T>
 inline __device__ mc<T> operator*(mc<T> a, T b)
 {
     return mul(b, a);
+}
+
+template<typename T>
+inline __device__ mc<T> operator/(mc<T> a, T b)
+{
+    return div(a, b);
 }
 
 #endif // CUMCCORMICK_ARITHMETIC_BASIC_CUH

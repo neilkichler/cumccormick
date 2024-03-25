@@ -8,6 +8,8 @@ __global__ void basic_kernel()
     mc<double> d = sub(a, b);
     mc<double> e = mul(2.0, a);
     mc<double> f = sqr(e);
+    mc<double> g = div(f, 2.0);
+    mc<double> h = exp(g);
 }
 
 void basic_kernel(cudaStream_t stream)
