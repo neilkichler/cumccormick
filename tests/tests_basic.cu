@@ -11,6 +11,8 @@ __global__ void basic_kernel()
     auto g = div(f, 2.0);
     auto h = exp(g);
     auto i = sqrt(h);
+    auto j = cos(i);
+    auto k = sin(j);
 }
 
 void basic_kernel(cudaStream_t stream)

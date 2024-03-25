@@ -4,6 +4,8 @@
 #include <cuinterval/arithmetic/basic.cuh>
 #include <cuinterval/arithmetic/intrinsic.cuh>
 
+#include <cmath>
+
 #include "mccormick.h"
 
 template<typename T>
@@ -18,11 +20,35 @@ inline __device__ mc<T> add(mc<T> a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> add(T a, mc<T> b)
+{
+    return { .cv  = intrinsic::add_down(a, b.cv),
+             .cc  = intrinsic::add_up(a, b.cc),
+             .box = a + b.box };
+}
+
+template<typename T>
 inline __device__ mc<T> sub(mc<T> a, mc<T> b)
 {
     return { .cv  = intrinsic::sub_down(a.cv, b.cc),
              .cc  = intrinsic::sub_up(a.cc, b.cv),
              .box = a.box - b.box };
+}
+
+template<typename T>
+inline __device__ mc<T> sub(T a, mc<T> b)
+{
+    return { .cv  = intrinsic::sub_down(a, b.cc),
+             .cc  = intrinsic::sub_up(a, b.cv),
+             .box = a - b.box };
+}
+
+template<typename T>
+inline __device__ mc<T> sub(mc<T> a, T b)
+{
+    return { .cv  = intrinsic::sub_down(a.cv, b),
+             .cc  = intrinsic::sub_up(a.cc, b),
+             .box = a.box - b };
 }
 
 template<typename T>
@@ -109,7 +135,31 @@ inline __device__ mc<T> operator+(mc<T> a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> operator+(T a, mc<T> b)
+{
+    return add(a, b);
+}
+
+template<typename T>
+inline __device__ mc<T> operator+(mc<T> a, T b)
+{
+    return add(b, a);
+}
+
+template<typename T>
 inline __device__ mc<T> operator-(mc<T> a, mc<T> b)
+{
+    return sub(a, b);
+}
+
+template<typename T>
+inline __device__ mc<T> operator-(T a, mc<T> b)
+{
+    return sub(a, b);
+}
+
+template<typename T>
+inline __device__ mc<T> operator-(mc<T> a, T b)
 {
     return sub(a, b);
 }
@@ -130,6 +180,26 @@ template<typename T>
 inline __device__ mc<T> operator/(mc<T> a, T b)
 {
     return div(a, b);
+}
+
+template<typename T>
+inline __device__ mc<T> cos(mc<T> x)
+{
+    using namespace intrinsic;
+
+    interval<T> cos_box = cos(x.box);
+
+    return { .cv  = inf(cos_box),
+             .cc  = sup(cos_box),
+             .box = cos_box };
+}
+
+template<typename T>
+inline __device__ mc<T> sin(mc<T> x)
+{
+    using namespace intrinsic;
+
+    return cos(x - static_cast<T>(M_PI_2));
 }
 
 #endif // CUMCCORMICK_ARITHMETIC_BASIC_CUH
