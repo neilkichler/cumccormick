@@ -44,6 +44,18 @@ inline __device__ mc<T> div(mc<T> a, T b)
 }
 
 template<typename T>
+inline __device__ T inf(mc<T> x)
+{
+    return inf(x.box);
+}
+
+template<typename T>
+inline __device__ T sup(mc<T> x)
+{
+    return sup(x.box);
+}
+
+template<typename T>
 inline __device__ mc<T> sqr(mc<T> x)
 {
     // since sqr is convex we do not have to find the midpoints.
@@ -53,7 +65,7 @@ inline __device__ mc<T> sqr(mc<T> x)
 
     using namespace intrinsic;
 
-    T cc = sub_up(mul_up(add_up(inf(x.box), sup(x.box)), x.cc), mul_up(inf(x.box), sup(x.box)));
+    T cc = sub_up(mul_up(add_up(inf(x), sup(x)), x.cc), mul_up(inf(x), sup(x)));
     return { .cv  = mul_down(x.cv, x.cv),
              .cc  = cc,
              .box = sqr(x.box) };
@@ -63,15 +75,31 @@ template<typename T>
 inline __device__ mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
-    T r = is_singleton(x.box)
-        ? div_up(sub_up(exp(sup(x.box)), exp(inf(x.box))),
-      (sub_down(sup(x.box), inf(x.box))))
-        : static_cast<T>(0);
-    T cc = exp(inf(x.box)) + r * exp(x.cc);
+
+    // We are computing a secant here
+    T r  = is_singleton(x.box)
+         ? static_cast<T>(0)
+         : div_up(sub_up(exp(sup(x)), exp(inf(x))), (sub_down(sup(x), inf(x))));
+    T cc = add_up(exp(inf(x)), mul_up(r, exp(x.cc)));
 
     return { .cv  = intrinsic::next_after(exp(x.cv), static_cast<T>(0)),
              .cc  = cc,
              .box = exp(x.box) };
+}
+
+template<typename T>
+inline __device__ mc<T> sqrt(mc<T> x)
+{
+    using namespace intrinsic;
+
+    T r  = is_singleton(x.box)
+         ? static_cast<T>(0)
+         : div_up(sub_up(sqrt(sup(x)), sqrt(inf(x))), (sub_down(sup(x), inf(x))));
+    T cv = add_down(sqrt_down(inf(x)), mul_down(r, sqrt_down(x.cv)));
+
+    return { .cv  = cv,
+             .cc  = intrinsic::sqrt_up(x.cc),
+             .box = sqrt(x.box) };
 }
 
 template<typename T>
