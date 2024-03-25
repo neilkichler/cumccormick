@@ -4,6 +4,7 @@
 #include <cuinterval/arithmetic/basic.cuh>
 #include <cuinterval/arithmetic/intrinsic.cuh>
 
+#include <algorithm>
 #include <cmath>
 
 #include "mccormick.h"
@@ -82,17 +83,46 @@ inline __device__ T sup(mc<T> x)
 }
 
 template<typename T>
+inline __device__ T mid(T v, T lb, T ub)
+{
+    return std::clamp(v, lb, ub);
+}
+
+template<typename T>
 inline __device__ mc<T> sqr(mc<T> x)
 {
-    // since sqr is convex we do not have to find the midpoints.
-    // return { .cv  = sqr(x.cv, x.cv),
-    //          .cc  = (inf(x.box) + sup(x.box)) * x.cc - inf(x.box) * sup(x.box),
-    //          .box = sqr(x.box) };
-
     using namespace intrinsic;
 
-    T cc = sub_up(mul_up(add_up(inf(x), sup(x)), x.cc), mul_up(inf(x), sup(x)));
-    return { .cv  = mul_down(x.cv, x.cv),
+    T zmin;
+    T zmax;
+
+    T midcv;
+    T midcc;
+    constexpr auto zero = static_cast<T>(0);
+
+    // TODO: maybe we should use x.cv and x.cc in the if statement?
+    if (sup(x) < zero) {
+        // zmin = sup(x);
+        // zmax = inf(x);
+        midcv = x.cc;
+        midcc = x.cv;
+    } else if (inf(x) > zero) {
+        midcv = x.cv;
+        midcc = x.cc;
+        // zmin = inf(x);
+        // zmax = sup(x);
+    } else {
+        midcv = mid(zero, x.cv, x.cc);
+        midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
+        // zmin = zero;
+        // zmax = (abs(inf(x)) >= abs(sup(x))) ? inf(x) : sup(x);
+    }
+
+    // T midcv = std::clamp(zmin, x.cv, x.cc);
+    // T midcc = std::clamp(zmax, x.cv, x.cc);
+
+    T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_up(inf(x), sup(x)));
+    return { .cv  = mul_down(midcv, midcv),
              .cc  = cc,
              .box = sqr(x.box) };
 }
@@ -106,9 +136,14 @@ inline __device__ mc<T> exp(mc<T> x)
     T r  = is_singleton(x.box)
          ? static_cast<T>(0)
          : div_up(sub_up(exp(sup(x)), exp(inf(x))), (sub_down(sup(x), inf(x))));
-    T cc = add_up(exp(inf(x)), mul_up(r, exp(x.cc)));
 
-    return { .cv  = intrinsic::next_after(exp(x.cv), static_cast<T>(0)),
+    T midcv = std::clamp(inf(x), x.cv, x.cc);
+    T midcc = std::clamp(sup(x), x.cv, x.cc);
+
+    T cc = add_up(exp(sup(x)), mul_up(r, sub_up(exp(midcc), sup(x))));
+    // T cc = add_up(exp(sup(x)), mul_up(r, exp(x.box.ub)));
+
+    return { .cv  = intrinsic::next_after(exp(midcv), static_cast<T>(0)),
              .cc  = cc,
              .box = exp(x.box) };
 }
@@ -121,10 +156,13 @@ inline __device__ mc<T> sqrt(mc<T> x)
     T r  = is_singleton(x.box)
          ? static_cast<T>(0)
          : div_up(sub_up(sqrt(sup(x)), sqrt(inf(x))), (sub_down(sup(x), inf(x))));
-    T cv = add_down(sqrt_down(inf(x)), mul_down(r, sqrt_down(x.cv)));
+
+    T midcv = std::clamp(inf(x), x.cv, x.cc);
+    T midcc = std::clamp(sup(x), x.cv, x.cc);
+    T cv = add_down(sqrt_down(inf(x)), mul_down(r, sqrt_down(midcv)));
 
     return { .cv  = cv,
-             .cc  = intrinsic::sqrt_up(x.cc),
+             .cc  = intrinsic::sqrt_up(midcc),
              .box = sqrt(x.box) };
 }
 
