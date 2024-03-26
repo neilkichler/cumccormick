@@ -118,8 +118,8 @@ inline __device__ mc<T> sqr(mc<T> x)
         // zmax = (abs(inf(x)) >= abs(sup(x))) ? inf(x) : sup(x);
     }
 
-    // T midcv = std::clamp(zmin, x.cv, x.cc);
-    // T midcc = std::clamp(zmax, x.cv, x.cc);
+    // T midcv = mid(zmin, x.cv, x.cc);
+    // T midcc = mid(zmax, x.cv, x.cc);
 
     T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_up(inf(x), sup(x)));
     return { .cv  = mul_down(midcv, midcv),
@@ -132,18 +132,14 @@ inline __device__ mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
 
-    // We are computing a secant here
+    // computing secant over interval endpoints
     T r  = is_singleton(x.box)
          ? static_cast<T>(0)
          : div_up(sub_up(exp(sup(x)), exp(inf(x))), (sub_down(sup(x), inf(x))));
 
-    T midcv = std::clamp(inf(x), x.cv, x.cc);
-    T midcc = std::clamp(sup(x), x.cv, x.cc);
+    T cc = add_up(exp(sup(x)), mul_up(r, sub_up(x.cc, sup(x))));
 
-    T cc = add_up(exp(sup(x)), mul_up(r, sub_up(exp(midcc), sup(x))));
-    // T cc = add_up(exp(sup(x)), mul_up(r, exp(x.box.ub)));
-
-    return { .cv  = intrinsic::next_after(exp(midcv), static_cast<T>(0)),
+    return { .cv  = intrinsic::next_after(exp(x.cv), static_cast<T>(0)),
              .cc  = cc,
              .box = exp(x.box) };
 }
@@ -153,13 +149,14 @@ inline __device__ mc<T> sqrt(mc<T> x)
 {
     using namespace intrinsic;
 
+    // computing secant over interval endpoints
     T r  = is_singleton(x.box)
          ? static_cast<T>(0)
-         : div_up(sub_up(sqrt(sup(x)), sqrt(inf(x))), (sub_down(sup(x), inf(x))));
+         : div_down(sub_down(sqrt(sup(x)), sqrt(inf(x))), (sub_down(sup(x), inf(x))));
 
-    T midcv = std::clamp(inf(x), x.cv, x.cc);
-    T midcc = std::clamp(sup(x), x.cv, x.cc);
-    T cv = add_down(sqrt_down(inf(x)), mul_down(r, sqrt_down(midcv)));
+    T midcv = mid(inf(x), x.cv, x.cc);
+    T midcc = mid(sup(x), x.cv, x.cc);
+    T cv = add_down(sqrt_down(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
 
     return { .cv  = cv,
              .cc  = intrinsic::sqrt_up(midcc),

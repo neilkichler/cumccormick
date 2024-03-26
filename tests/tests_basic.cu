@@ -9,24 +9,24 @@ __global__ void basic_kernel()
 
     auto print = [](mc<double> x) { printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, sup(x)); };
 
-    // auto c = add(a, b);
-    // print(c);
+    auto c = add(a, b);
+    print(c);
     auto d = sub(a, b);
     print(d);
-    // auto e = mul(2.0, a);
-    // print(e);
-    auto f = sqr(d);
+    auto e = mul(2.0, a);
+    print(e);
+    auto f = sqr((a + b) - a);
     print(f);
-    // auto g = div(f, 2.0);
-    // print(g);
-    // auto h = exp(a);
-    // print(h);
-    // auto i = sqrt(b);
-    // print(i);
-    // auto j = cos(i);
-    // print(j);
-    // auto k = sin(j);
-    // print(k);
+    auto g = div(f, 2.0);
+    print(g);
+    auto h = exp(a-1.5);
+    print(h);
+    auto i = sqrt(a+b);
+    print(i);
+    auto j = cos(i);
+    print(j);
+    auto k = sin(j);
+    print(k);
 }
 
 void basic_kernel(cudaStream_t stream)
