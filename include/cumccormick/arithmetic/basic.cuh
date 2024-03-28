@@ -131,6 +131,7 @@ template<typename T>
 inline __device__ mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
+    // TODO: error in exp not accounted for
 
     // computing secant over interval endpoints
     T r  = is_singleton(x.box)
@@ -235,6 +236,27 @@ inline __device__ mc<T> sin(mc<T> x)
     using namespace intrinsic;
 
     return cos(x - static_cast<T>(M_PI_2));
+}
+
+template<typename T>
+inline __device__ mc<T> log(mc<T> x)
+{
+    using namespace intrinsic;
+
+    // TODO: error in log not accounted for
+
+    // computing secant over interval endpoints
+    T r  = is_singleton(x.box)
+         ? static_cast<T>(0)
+         : div_down(sub_down(log(sup(x)), log(inf(x))), (sub_down(sup(x), inf(x))));
+
+    T midcv = mid(inf(x), x.cv, x.cc);
+    T midcc = mid(sup(x), x.cv, x.cc);
+    T cv = add_down(log(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
+
+    return { .cv  = cv,
+             .cc  = log(midcc),
+             .box = log(x.box) };
 }
 
 #endif // CUMCCORMICK_ARITHMETIC_BASIC_CUH

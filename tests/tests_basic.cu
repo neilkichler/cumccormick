@@ -27,6 +27,12 @@ __global__ void basic_kernel()
     print(j);
     auto k = sin(j);
     print(k);
+    auto l = log(a);
+    print(l);
+    auto m = log(b);
+    print(m);
+}
+
 }
 
 void basic_kernel(cudaStream_t stream)
