@@ -62,6 +62,58 @@ inline __device__ mc<T> mul(T a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> mul_nearest_even_rounding(mc<T> a, mc<T> b)
+{
+    using namespace intrinsic;
+
+    T alpha1 = min(inf(b) * a.cv, inf(b) * a.cc);
+    T alpha2 = min(inf(a) * b.cv, inf(a) * b.cc);
+    T beta1  = min(sup(b) * a.cv, sup(b) * a.cc);
+    T beta2  = min(sup(a) * b.cv, sup(a) * b.cc);
+
+    T gamma1 = max(inf(b) * a.cv, inf(b) * a.cc);
+    T delta2 = max(inf(a) * b.cv, inf(a) * b.cc);
+    T delta1 = max(sup(b) * a.cv, sup(b) * a.cc);
+    T gamma2 = max(sup(a) * b.cv, sup(a) * b.cc);
+
+    T cv = max(alpha1 + alpha2 - inf(a) * inf(b),
+               beta1 + beta2 - sup(a) * sup(b));
+
+    T cc = min(gamma1 + gamma2 - sup(a) * inf(b),
+               delta1 + delta2 - inf(a) * sup(b));
+
+    return { .cv  = cv,
+             .cc  = cc,
+             .box = mul(a.box, b.box) };
+}
+
+template<typename T>
+inline __device__ mc<T> mul(mc<T> a, mc<T> b)
+{
+    using namespace intrinsic;
+
+    T alpha1 = min(mul_down(inf(b), a.cv), mul_down(inf(b), a.cc));
+    T alpha2 = min(mul_down(inf(a), b.cv), mul_down(inf(a), b.cc));
+    T beta1  = min(mul_down(sup(b), a.cv), mul_down(sup(b), a.cc));
+    T beta2  = min(mul_down(sup(a), b.cv), mul_down(sup(a), b.cc));
+
+    T gamma1 = max(mul_up(inf(b), a.cv), mul_up(inf(b), a.cc));
+    T delta2 = max(mul_up(inf(a), b.cv), mul_up(inf(a), b.cc));
+    T delta1 = max(mul_up(sup(b), a.cv), mul_up(sup(b), a.cc));
+    T gamma2 = max(mul_up(sup(a), b.cv), mul_up(sup(a), b.cc));
+
+    T cv = max(sub_down(add_down(alpha1, alpha2), mul_down(inf(a), inf(b))),
+               sub_down(add_down(beta1, beta2), mul_down(sup(a), sup(b))));
+
+    T cc = min(sub_up(add_up(gamma1, gamma2), mul_up(sup(a), inf(b))),
+               sub_up(add_up(delta1, delta2), mul_up(inf(a), sup(b))));
+
+    return { .cv  = cv,
+             .cc  = cc,
+             .box = mul(a.box, b.box) };
+}
+
+template<typename T>
 inline __device__ mc<T> div(mc<T> a, T b)
 {
     bool is_neg = b < static_cast<T>(0);
@@ -134,9 +186,9 @@ inline __device__ mc<T> exp(mc<T> x)
     // TODO: error in exp not accounted for
 
     // computing secant over interval endpoints
-    T r  = is_singleton(x.box)
-         ? static_cast<T>(0)
-         : div_up(sub_up(exp(sup(x)), exp(inf(x))), (sub_down(sup(x), inf(x))));
+    T r = is_singleton(x.box)
+        ? static_cast<T>(0)
+        : div_up(sub_up(exp(sup(x)), exp(inf(x))), (sub_down(sup(x), inf(x))));
 
     T cc = add_up(exp(sup(x)), mul_up(r, sub_up(x.cc, sup(x))));
 
@@ -151,13 +203,13 @@ inline __device__ mc<T> sqrt(mc<T> x)
     using namespace intrinsic;
 
     // computing secant over interval endpoints
-    T r  = is_singleton(x.box)
-         ? static_cast<T>(0)
-         : div_down(sub_down(sqrt(sup(x)), sqrt(inf(x))), (sub_down(sup(x), inf(x))));
+    T r = is_singleton(x.box)
+        ? static_cast<T>(0)
+        : div_down(sub_down(sqrt(sup(x)), sqrt(inf(x))), (sub_down(sup(x), inf(x))));
 
     T midcv = mid(inf(x), x.cv, x.cc);
     T midcc = mid(sup(x), x.cv, x.cc);
-    T cv = add_down(sqrt_down(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
+    T cv    = add_down(sqrt_down(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
 
     return { .cv  = cv,
              .cc  = intrinsic::sqrt_up(midcc),
@@ -213,6 +265,12 @@ inline __device__ mc<T> operator*(mc<T> a, T b)
 }
 
 template<typename T>
+inline __device__ mc<T> operator*(mc<T> a, mc<T> b)
+{
+    return mul(b, a);
+}
+
+template<typename T>
 inline __device__ mc<T> operator/(mc<T> a, T b)
 {
     return div(a, b);
@@ -246,13 +304,13 @@ inline __device__ mc<T> log(mc<T> x)
     // TODO: error in log not accounted for
 
     // computing secant over interval endpoints
-    T r  = is_singleton(x.box)
-         ? static_cast<T>(0)
-         : div_down(sub_down(log(sup(x)), log(inf(x))), (sub_down(sup(x), inf(x))));
+    T r = is_singleton(x.box)
+        ? static_cast<T>(0)
+        : div_down(sub_down(log(sup(x)), log(inf(x))), (sub_down(sup(x), inf(x))));
 
     T midcv = mid(inf(x), x.cv, x.cc);
     T midcc = mid(sup(x), x.cv, x.cc);
-    T cv = add_down(log(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
+    T cv    = add_down(log(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
 
     return { .cv  = cv,
              .cc  = log(midcc),

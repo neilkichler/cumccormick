@@ -31,8 +31,19 @@ __global__ void basic_kernel()
     print(l);
     auto m = log(b);
     print(m);
+    auto n = mul(a, b);
+    print(n);
 }
 
+
+__global__ void test_fn_kernel()
+{
+    // mc<double> x = { .cv = 2.0, .cc = 2.0, .box = { .lb = 1.0, .ub = 4.0 } };
+    //
+    // auto print = [](mc<double> x) { printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, sup(x)); };
+
+    // auto xMC = x * (x - 5.0) * sin(x);
+    // print(k);
 }
 
 void basic_kernel(cudaStream_t stream)
