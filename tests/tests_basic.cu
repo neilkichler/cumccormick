@@ -8,6 +8,8 @@ __global__ void basic_kernel()
     mc<double> b = { .cv = 3.0, .cc = 4.0, .box = { .lb = 2.0, .ub = 5.0 } };
 
     auto print = [](mc<double> x) { printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, sup(x)); };
+    print(a);
+    print(b);
 
     auto c = add(a, b);
     print(c);
@@ -33,6 +35,8 @@ __global__ void basic_kernel()
     print(m);
     auto n = mul(a, b);
     print(n);
+    auto o = recip(a);
+    print(o);
 }
 
 

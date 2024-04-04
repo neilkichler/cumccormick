@@ -13,6 +13,12 @@ template<typename T>
 using mc = mccormick<T>;
 
 template<typename T>
+inline __device__ T mid(T v, T lb, T ub)
+{
+    return std::clamp(v, lb, ub);
+}
+
+template<typename T>
 inline __device__ mc<T> add(mc<T> a, mc<T> b)
 {
     return { .cv  = intrinsic::add_down(a.cv, b.cv),
@@ -114,12 +120,61 @@ inline __device__ mc<T> mul(mc<T> a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> recip(mc<T> x)
+{
+    using namespace intrinsic;
+
+    constexpr auto zero = static_cast<T>(0);
+
+    T cv;
+    T cc;
+    T midcv = mid(sup(x), x.cv, x.cc);
+    T midcc = mid(inf(x), x.cv, x.cc);
+
+    if (contains(x.box, zero)) {
+        cv = nan<T>();
+        cc = nan<T>();
+    } else if (sup(x) < zero) {
+        // for x < 0, recip is concave
+
+        // computing secant over interval endpoints
+        T r = is_singleton(x.box)
+            ? static_cast<T>(0)
+            : div_down(sub_down(rcp_down(sup(x)), rcp_down(inf(x))), (sub_down(sup(x), inf(x))));
+
+        cv = add_down(rcp_down(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
+        cc = rcp_up(midcc);
+    } else { // inf(x) > zero
+        // for x > 0, recip is convex
+
+        // computing secant over interval endpoints
+        T r = is_singleton(x.box)
+            ? static_cast<T>(0)
+            : div_up(sub_up(rcp_up(sup(x)), rcp_up(inf(x))), (sub_up(sup(x), inf(x))));
+
+        cc = add_up(rcp_up(sup(x)), mul_up(r, sub_up(midcc, sup(x))));
+        cv = rcp_down(midcv);
+    }
+
+    return { .cv  = cv,
+             .cc  = cc,
+             .box = recip(x.box) };
+}
+
+template<typename T>
 inline __device__ mc<T> div(mc<T> a, T b)
 {
     bool is_neg = b < static_cast<T>(0);
     return { .cv  = intrinsic::div_down(is_neg ? a.cc : a.cv, b),
              .cc  = intrinsic::div_up(is_neg ? a.cv : a.cc, b),
              .box = a.box / b };
+}
+
+template<typename T>
+inline __device__ mc<T> div(mc<T> a, mc<T> b)
+{
+    // TODO: implement tighter relaxation
+    return mul(a, recip(b));
 }
 
 template<typename T>
@@ -132,12 +187,6 @@ template<typename T>
 inline __device__ T sup(mc<T> x)
 {
     return sup(x.box);
-}
-
-template<typename T>
-inline __device__ T mid(T v, T lb, T ub)
-{
-    return std::clamp(v, lb, ub);
 }
 
 template<typename T>
