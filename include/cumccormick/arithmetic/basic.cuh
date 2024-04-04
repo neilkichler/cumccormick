@@ -132,8 +132,22 @@ inline __device__ mc<T> recip(mc<T> x)
     T midcc = mid(inf(x), x.cv, x.cc);
 
     if (contains(x.box, zero)) {
-        cv = nan<T>();
-        cc = nan<T>();
+        if (inf(x) < zero && zero == sup(x)) {
+            cv = intrinsic::neg_inf<T>();
+            cc = rcp_up(midcc);
+        } else if (inf(x) == zero && zero < sup(x)) {
+            cv = rcp_down(midcv);
+            cc = intrinsic::pos_inf<T>();
+        } else if (inf(x) < zero && zero < sup(x)) {
+            return { .cv  = intrinsic::neg_inf<T>(),
+                     .cc  = intrinsic::pos_inf<T>(),
+                     .box = entire<T>() };
+        } else if (inf(x) == zero && zero == sup(x)) {
+            // NOTE: Alternatively, we could return nans.
+            return { .cv  = intrinsic::pos_inf<T>(),
+                     .cc  = intrinsic::neg_inf<T>(),
+                     .box = entire<T>() };
+        }
     } else if (sup(x) < zero) {
         // for x < 0, recip is concave
 
@@ -156,6 +170,7 @@ inline __device__ mc<T> recip(mc<T> x)
         cv = rcp_down(midcv);
     }
 
+    // TODO: relaxation could be more efficient if we embed the IA into the different cases.
     return { .cv  = cv,
              .cc  = cc,
              .box = recip(x.box) };
