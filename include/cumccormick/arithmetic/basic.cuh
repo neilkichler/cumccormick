@@ -341,6 +341,12 @@ inline __device__ mc<T> operator/(mc<T> a, T b)
 }
 
 template<typename T>
+inline __device__ mc<T> operator/(mc<T> a, mc<T> b)
+{
+    return div(a, b);
+}
+
+template<typename T>
 inline __device__ mc<T> cos(mc<T> x)
 {
     using namespace intrinsic;

@@ -37,6 +37,8 @@ __global__ void basic_kernel()
     print(n);
     auto o = recip(a);
     print(o);
+    auto p = div(a, b);
+    print(p);
 }
 
 
