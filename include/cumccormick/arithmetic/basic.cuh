@@ -281,6 +281,70 @@ inline __device__ mc<T> sqrt(mc<T> x)
 }
 
 template<typename T>
+inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
+{
+    using namespace intrinsic;
+
+    T cv;
+    T cc;
+
+    if (n == 0) {
+        constexpr auto one = static_cast<T>(1);
+        return { .cv  = one,
+                 .cc  = one,
+                 .box = { one, one } };
+    } else if (n == 1) {
+        return x;
+    } else if (n == 2) {
+        return sqr(x);
+    }
+
+    if (n % 2) { // odd power
+        constexpr auto zero = static_cast<T>(0);
+
+        // NOTE: pown is monotonically increasing for n odd, so can directly know midcv and midcc, without mid
+        T midcv = mid(inf(x), x.cv, x.cc); // x.cv
+        T midcc = mid(sup(x), x.cv, x.cc); // x.cc
+
+        if (sup(x) <= zero) {
+            // for x < 0, pown(x,n_odd) is concave
+
+            // TODO: not accounting for pow(x,n) error (2 ulps)
+
+            // computing secant over interval endpoints
+            T r = is_singleton(x.box)
+                ? static_cast<T>(0)
+                : div_down(sub_down(pow(sup(x), n), pow(inf(x), n)), (sub_down(sup(x), inf(x))));
+
+            cv = add_down(pow(inf(x), n), mul_down(r, sub_down(midcv, inf(x))));
+            cc = pow(midcc, n);
+        } else if (inf(x) >= zero) {
+            // for x > 0, pown(x,n_odd) is convex
+
+            // TODO: not accounting for pow(x,n) error (2 ulps)
+
+            // computing secant over interval endpoints
+            T r = is_singleton(x.box)
+                ? static_cast<T>(0)
+                : div_up(sub_up(pow(sup(x), n), pow(inf(x), n)), (sub_up(sup(x), inf(x))));
+
+            cv = pow(midcv, n);
+            cc = add_up(pow(sup(x), n), mul_up(r, sub_up(midcc, sup(x))));
+        } else {
+            // for 0 in x, pown(x,n_odd) is concavoconvex
+
+            // differentiable variant
+            cv = pow(inf(x),n) * ((sup(x) - midcv) / (sup(x) - inf(x))) + pow(max(zero, midcv), n);
+            cc = pow(sup(x),n) * ((midcc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, midcc), n);
+        }
+    }
+
+    return { .cv  = cv,
+             .cc  = cc,
+             .box = pown(x.box, n) };
+}
+
+template<typename T>
 inline __device__ mc<T> operator+(mc<T> a, mc<T> b)
 {
     return add(a, b);

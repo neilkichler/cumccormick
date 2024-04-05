@@ -39,6 +39,12 @@ __global__ void basic_kernel()
     print(o);
     auto p = div(a, b);
     print(p);
+    auto q = pown(a, 3);
+    print(q);
+    auto r = pown(b, 3);
+    print(r);
+    auto s = pown(a-2.0, 3);
+    print(s);
 }
 
 
