@@ -47,6 +47,19 @@ __global__ void basic_kernel()
     print(s);
 }
 
+__global__ void test_pown()
+{
+    mc<double> a = { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
+
+    auto print = [](mc<double> x) { printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, sup(x)); };
+
+    auto c = pown(a, 5);
+    print(c);
+    auto d = pown(a-2.0, 5);
+    print(d);
+    auto e = pown(a, 4);
+    print(e);
+}
 
 __global__ void test_fn_kernel()
 {
@@ -61,4 +74,9 @@ __global__ void test_fn_kernel()
 void basic_kernel(cudaStream_t stream)
 {
     basic_kernel<<<1, 1, 0, stream>>>();
+}
+
+void pown_kernel(cudaStream_t stream)
+{
+    test_pown<<<1, 1, 0, stream>>>();
 }

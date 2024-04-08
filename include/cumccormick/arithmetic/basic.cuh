@@ -205,6 +205,42 @@ inline __device__ T sup(mc<T> x)
 }
 
 template<typename T>
+inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
+{
+    using namespace intrinsic;
+
+    T zmin;
+    T zmax;
+    T midcv;
+    T midcc;
+    constexpr auto zero = static_cast<T>(0);
+
+    if (sup(x) <= zero) {
+        midcv = x.cc;
+        midcc = x.cv;
+    } else if (inf(x) >= zero) {
+        midcv = x.cv;
+        midcc = x.cc;
+    } else {
+        midcv = mid(zero, x.cv, x.cc);
+        midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
+    }
+
+    // TODO: floating point error not accounted for
+
+    // computing secant over interval endpoints
+    T r = is_singleton(x.box)
+        ? static_cast<T>(0)
+        : div_up(sub_up(pow(sup(x), n), pow(inf(x), n)), (sub_down(sup(x), inf(x))));
+
+    T cc = add_up(pow(sup(x), n), mul_up(r, sub_up(x.cc, sup(x))));
+
+    return { .cv  = pow(midcv, n),
+             .cc  = cc,
+             .box = pown(x.box, n) };
+}
+
+template<typename T>
 inline __device__ mc<T> sqr(mc<T> x)
 {
     using namespace intrinsic;
@@ -217,12 +253,12 @@ inline __device__ mc<T> sqr(mc<T> x)
     constexpr auto zero = static_cast<T>(0);
 
     // TODO: maybe we should use x.cv and x.cc in the if statement?
-    if (sup(x) < zero) {
+    if (sup(x) <= zero) {
         // zmin = sup(x);
         // zmax = inf(x);
         midcv = x.cc;
         midcc = x.cv;
-    } else if (inf(x) > zero) {
+    } else if (inf(x) >= zero) {
         midcv = x.cv;
         midcc = x.cc;
         // zmin = inf(x);
@@ -299,6 +335,7 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
         return sqr(x);
     }
 
+    // TODO: n < 0 not considered yet
     if (n % 2) { // odd power
         constexpr auto zero = static_cast<T>(0);
 
@@ -337,6 +374,8 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
             cv = pow(inf(x),n) * ((sup(x) - midcv) / (sup(x) - inf(x))) + pow(max(zero, midcv), n);
             cc = pow(sup(x),n) * ((midcc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, midcc), n);
         }
+    } else {
+        return pown_even(x, n);
     }
 
     return { .cv  = cv,
