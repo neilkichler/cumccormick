@@ -119,6 +119,34 @@ inline __device__ mc<T> mul(mc<T> a, mc<T> b)
              .box = mul(a.box, b.box) };
 }
 
+template<typename T, typename F>
+inline __device__ T secant_of_concave(T x, T lb, T ub, F &&f)
+{
+    // TODO: Does not consider rounding of f
+    using namespace intrinsic;
+
+    // computing secant over interval endpoints
+    T r = lb == ub
+        ? static_cast<T>(0)
+        : div_down(sub_down(f(ub), f(lb)), (sub_down(ub, lb)));
+
+    return add_down(f(lb), mul_down(r, sub_down(x, lb)));
+}
+
+template<typename T, typename F>
+inline __device__ T secant_of_convex(T x, T lb, T ub, F &&f)
+{
+    // TODO: Does not consider rounding of f
+    using namespace intrinsic;
+
+    // computing secant over interval endpoints
+    T r = lb == ub
+        ? static_cast<T>(0)
+        : div_up(sub_up(f(ub), f(lb)), (sub_up(ub, lb)));
+
+    return add_up(f(ub), mul_up(r, sub_up(x, ub)));
+}
+
 template<typename T>
 inline __device__ mc<T> recip(mc<T> x)
 {
@@ -150,23 +178,11 @@ inline __device__ mc<T> recip(mc<T> x)
         }
     } else if (sup(x) < zero) {
         // for x < 0, recip is concave
-
-        // computing secant over interval endpoints
-        T r = is_singleton(x.box)
-            ? static_cast<T>(0)
-            : div_down(sub_down(rcp_down(sup(x)), rcp_down(inf(x))), (sub_down(sup(x), inf(x))));
-
-        cv = add_down(rcp_down(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
+        cv = secant_of_concave(midcv, inf(x), sup(x), rcp_down<T>);
         cc = rcp_up(midcc);
     } else { // inf(x) > zero
         // for x > 0, recip is convex
-
-        // computing secant over interval endpoints
-        T r = is_singleton(x.box)
-            ? static_cast<T>(0)
-            : div_up(sub_up(rcp_up(sup(x)), rcp_up(inf(x))), (sub_up(sup(x), inf(x))));
-
-        cc = add_up(rcp_up(sup(x)), mul_up(r, sub_up(midcc, sup(x))));
+        cc = secant_of_convex(midcc, inf(x), sup(x), rcp_up<T>);
         cv = rcp_down(midcv);
     }
 
@@ -226,14 +242,8 @@ inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
         midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
     }
 
-    // TODO: floating point error not accounted for
-
-    // computing secant over interval endpoints
-    T r = is_singleton(x.box)
-        ? static_cast<T>(0)
-        : div_up(sub_up(pow(sup(x), n), pow(inf(x), n)), (sub_down(sup(x), inf(x))));
-
-    T cc = add_up(pow(sup(x), n), mul_up(r, sub_up(midcc, sup(x))));
+    // TODO: floating point error in pow not accounted for
+    T cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
 
     return { .cv  = pow(midcv, n),
              .cc  = cc,
@@ -254,24 +264,15 @@ inline __device__ mc<T> sqr(mc<T> x)
 
     // TODO: maybe we should use x.cv and x.cc in the if statement?
     if (sup(x) <= zero) {
-        // zmin = sup(x);
-        // zmax = inf(x);
         midcv = x.cc;
         midcc = x.cv;
     } else if (inf(x) >= zero) {
         midcv = x.cv;
         midcc = x.cc;
-        // zmin = inf(x);
-        // zmax = sup(x);
     } else {
         midcv = mid(zero, x.cv, x.cc);
         midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
-        // zmin = zero;
-        // zmax = (abs(inf(x)) >= abs(sup(x))) ? inf(x) : sup(x);
     }
-
-    // T midcv = mid(zmin, x.cv, x.cc);
-    // T midcc = mid(zmax, x.cv, x.cc);
 
     T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_up(inf(x), sup(x)));
     return { .cv  = mul_down(midcv, midcv),
@@ -284,13 +285,7 @@ inline __device__ mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
     // TODO: error in exp not accounted for
-
-    // computing secant over interval endpoints
-    T r = is_singleton(x.box)
-        ? static_cast<T>(0)
-        : div_up(sub_up(exp(sup(x)), exp(inf(x))), (sub_down(sup(x), inf(x))));
-
-    T cc = add_up(exp(sup(x)), mul_up(r, sub_up(x.cc, sup(x))));
+    T cc = secant_of_convex(x.cc, inf(x), sup(x), [](T x) { return exp(x); });
 
     return { .cv  = intrinsic::next_after(exp(x.cv), static_cast<T>(0)),
              .cc  = cc,
@@ -301,15 +296,9 @@ template<typename T>
 inline __device__ mc<T> sqrt(mc<T> x)
 {
     using namespace intrinsic;
-
-    // computing secant over interval endpoints
-    T r = is_singleton(x.box)
-        ? static_cast<T>(0)
-        : div_down(sub_down(sqrt(sup(x)), sqrt(inf(x))), (sub_down(sup(x), inf(x))));
-
     T midcv = mid(inf(x), x.cv, x.cc);
     T midcc = mid(sup(x), x.cv, x.cc);
-    T cv    = add_down(sqrt_down(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
+    T cv    = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return sqrt(x); });
 
     return { .cv  = cv,
              .cc  = intrinsic::sqrt_up(midcc),
@@ -332,7 +321,7 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
     } else if (n == 1) {
         return x;
     } else if (n == 2) {
-        return sqr(x);
+        return sqr(x); // TODO: could be merged with even power case
     }
 
     // TODO: n < 0 not considered yet
@@ -343,36 +332,21 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
         T midcv = mid(inf(x), x.cv, x.cc); // x.cv
         T midcc = mid(sup(x), x.cv, x.cc); // x.cc
 
+        // TODO: not accounting for pow(x,n) error (2 ulps)
         if (sup(x) <= zero) {
             // for x < 0, pown(x,n_odd) is concave
-
-            // TODO: not accounting for pow(x,n) error (2 ulps)
-
-            // computing secant over interval endpoints
-            T r = is_singleton(x.box)
-                ? static_cast<T>(0)
-                : div_down(sub_down(pow(sup(x), n), pow(inf(x), n)), (sub_down(sup(x), inf(x))));
-
-            cv = add_down(pow(inf(x), n), mul_down(r, sub_down(midcv, inf(x))));
+            cv = secant_of_concave(midcv, inf(x), sup(x), [n](T x) { return pow(x, n); });
             cc = pow(midcc, n);
         } else if (inf(x) >= zero) {
             // for x > 0, pown(x,n_odd) is convex
-
-            // TODO: not accounting for pow(x,n) error (2 ulps)
-
-            // computing secant over interval endpoints
-            T r = is_singleton(x.box)
-                ? static_cast<T>(0)
-                : div_up(sub_up(pow(sup(x), n), pow(inf(x), n)), (sub_up(sup(x), inf(x))));
-
             cv = pow(midcv, n);
-            cc = add_up(pow(sup(x), n), mul_up(r, sub_up(midcc, sup(x))));
+            cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
         } else {
             // for 0 in x, pown(x,n_odd) is concavoconvex
 
             // differentiable variant
-            cv = pow(inf(x),n) * ((sup(x) - midcv) / (sup(x) - inf(x))) + pow(max(zero, midcv), n);
-            cc = pow(sup(x),n) * ((midcc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, midcc), n);
+            cv = pow(inf(x), n) * ((sup(x) - midcv) / (sup(x) - inf(x))) + pow(max(zero, midcv), n);
+            cc = pow(sup(x), n) * ((midcc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, midcc), n);
         }
     } else {
         return pown_even(x, n);
@@ -474,16 +448,11 @@ inline __device__ mc<T> log(mc<T> x)
 {
     using namespace intrinsic;
 
-    // TODO: error in log not accounted for
-
-    // computing secant over interval endpoints
-    T r = is_singleton(x.box)
-        ? static_cast<T>(0)
-        : div_down(sub_down(log(sup(x)), log(inf(x))), (sub_down(sup(x), inf(x))));
-
     T midcv = mid(inf(x), x.cv, x.cc);
     T midcc = mid(sup(x), x.cv, x.cc);
-    T cv    = add_down(log(inf(x)), mul_down(r, sub_down(midcv, inf(x))));
+
+    // TODO: error in log not accounted for
+    T cv = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return log(x); });
 
     return { .cv  = cv,
              .cc  = log(midcc),
