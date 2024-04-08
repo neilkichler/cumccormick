@@ -59,6 +59,10 @@ __global__ void test_pown()
     print(d);
     auto e = pown(a, 4);
     print(e);
+    auto f = pown(a-2.0, 4);
+    print(f);
+    auto g = pown(a-4.0, 4);
+    print(g);
 }
 
 __global__ void test_fn_kernel()

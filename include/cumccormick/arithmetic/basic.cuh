@@ -233,7 +233,7 @@ inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
         ? static_cast<T>(0)
         : div_up(sub_up(pow(sup(x), n), pow(inf(x), n)), (sub_down(sup(x), inf(x))));
 
-    T cc = add_up(pow(sup(x), n), mul_up(r, sub_up(x.cc, sup(x))));
+    T cc = add_up(pow(sup(x), n), mul_up(r, sub_up(midcc, sup(x))));
 
     return { .cv  = pow(midcv, n),
              .cc  = cc,
