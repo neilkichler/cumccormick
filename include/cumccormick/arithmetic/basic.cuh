@@ -231,19 +231,35 @@ inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
     T midcc;
     constexpr auto zero = static_cast<T>(0);
 
-    if (sup(x) <= zero) {
-        midcv = x.cc;
-        midcc = x.cv;
-    } else if (inf(x) >= zero) {
-        midcv = x.cv;
-        midcc = x.cc;
+    T cc;
+    if (n > 0) {
+        if (sup(x) <= zero) {
+            midcv = x.cc;
+            midcc = x.cv;
+        } else if (inf(x) >= zero) {
+            midcv = x.cv;
+            midcc = x.cc;
+        } else {
+            midcv = mid(zero, x.cv, x.cc);
+            midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
+        }
     } else {
-        midcv = mid(zero, x.cv, x.cc);
-        midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
+        if (sup(x) <= zero) {
+            midcv = x.cv;
+            midcc = x.cc;
+        } else if (inf(x) >= zero) {
+            midcv = x.cc;
+            midcc = x.cv;
+        } else {
+            midcv = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
+            return { .cv  = pow(midcv, n),
+                     .cc  = intrinsic::pos_inf<T>(),
+                     .box = pown(x.box, n) };
+        }
     }
 
     // TODO: floating point error in pow not accounted for
-    T cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+    cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
 
     return { .cv  = pow(midcv, n),
              .cc  = cc,
@@ -348,7 +364,7 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
             cv = pow(inf(x), n) * ((sup(x) - midcv) / (sup(x) - inf(x))) + pow(max(zero, midcv), n);
             cc = pow(sup(x), n) * ((midcc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, midcc), n);
         }
-    } else {
+    } else { // even power
         return pown_even(x, n);
     }
 
