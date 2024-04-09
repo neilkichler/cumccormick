@@ -19,6 +19,14 @@ inline __device__ T mid(T v, T lb, T ub)
 }
 
 template<typename T>
+inline __device__ mc<T> neg(mc<T> x)
+{
+    return { .cv  = -x.cc,
+             .cc  = -x.cv,
+             .box = -x.box };
+}
+
+template<typename T>
 inline __device__ mc<T> add(mc<T> a, mc<T> b)
 {
     return { .cv  = intrinsic::add_down(a.cv, b.cv),
@@ -392,6 +400,12 @@ template<typename T>
 inline __device__ mc<T> operator+(mc<T> a, T b)
 {
     return add(b, a);
+}
+
+template<typename T>
+inline __device__ mc<T> operator-(mc<T> a)
+{
+    return neg(a);
 }
 
 template<typename T>
