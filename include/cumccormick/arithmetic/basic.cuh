@@ -172,8 +172,8 @@ inline __device__ mc<T> recip(mc<T> x)
                      .box = entire<T>() };
         } else if (inf(x) == zero && zero == sup(x)) {
             // NOTE: Alternatively, we could return nans.
-            return { .cv  = intrinsic::pos_inf<T>(),
-                     .cc  = intrinsic::neg_inf<T>(),
+            return { .cv  = intrinsic::neg_inf<T>(),
+                     .cc  = intrinsic::pos_inf<T>(),
                      .box = entire<T>() };
         }
     } else if (sup(x) < zero) {
@@ -344,25 +344,28 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
     if (n % 2) { // odd power
         constexpr auto zero = static_cast<T>(0);
 
-        // NOTE: pown is monotonically increasing for n odd, so can directly know midcv and midcc, without mid
-        T midcv = mid(inf(x), x.cv, x.cc); // x.cv
-        T midcc = mid(sup(x), x.cv, x.cc); // x.cc
-
         // TODO: not accounting for pow(x,n) error (2 ulps)
         if (sup(x) <= zero) {
             // for x < 0, pown(x,n_odd) is concave
-            cv = secant_of_concave(midcv, inf(x), sup(x), [n](T x) { return pow(x, n); });
-            cc = pow(midcc, n);
+            T x_lb = n > 0 ? x.cc : x.cv;
+            cv = secant_of_concave(x.cv, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            cc = pow(x_lb, n);
         } else if (inf(x) >= zero) {
             // for x > 0, pown(x,n_odd) is convex
-            cv = pow(midcv, n);
-            cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            T x_lb = n > 0 ? x.cv : x.cc;
+            cv = pow(x_lb, n);
+            cc = secant_of_convex(x.cc, inf(x), sup(x), [n](T x) { return pow(x, n); });
         } else {
             // for 0 in x, pown(x,n_odd) is concavoconvex
-
-            // differentiable variant
-            cv = pow(inf(x), n) * ((sup(x) - midcv) / (sup(x) - inf(x))) + pow(max(zero, midcv), n);
-            cc = pow(sup(x), n) * ((midcc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, midcc), n);
+            if (n > 0) {
+                // differentiable variant
+                cv = pow(inf(x), n) * ((sup(x) - x.cv) / (sup(x) - inf(x))) + pow(max(zero, x.cv), n);
+                cc = pow(sup(x), n) * ((x.cc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, x.cc), n);
+            } else {
+                return { .cv  = intrinsic::pos_inf<T>(),
+                         .cc  = intrinsic::neg_inf<T>(),
+                         .box = entire<T>() };
+            }
         }
     } else { // even power
         return pown_even(x, n);
