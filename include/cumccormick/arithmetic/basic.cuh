@@ -356,13 +356,13 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
         if (sup(x) <= zero) {
             // for x < 0, pown(x,n_odd) is concave
             T x_lb = n > 0 ? x.cc : x.cv;
-            cv = secant_of_concave(x.cv, inf(x), sup(x), [n](T x) { return pow(x, n); });
-            cc = pow(x_lb, n);
+            cv     = secant_of_concave(x.cv, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            cc     = pow(x_lb, n);
         } else if (inf(x) >= zero) {
             // for x > 0, pown(x,n_odd) is convex
             T x_lb = n > 0 ? x.cv : x.cc;
-            cv = pow(x_lb, n);
-            cc = secant_of_convex(x.cc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            cv     = pow(x_lb, n);
+            cc     = secant_of_convex(x.cc, inf(x), sup(x), [n](T x) { return pow(x, n); });
         } else {
             // for 0 in x, pown(x,n_odd) is concavoconvex
             if (n > 0) {
