@@ -9,3 +9,8 @@ void tests_pown(cudaStream_t stream, cudaEvent_t event)
 {
     pown_kernel(stream);
 }
+
+void tests_fn(cudaStream_t stream, cudaEvent_t event)
+{
+    fn_kernel(stream);
+}
