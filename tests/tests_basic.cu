@@ -2,9 +2,12 @@
 
 #include <stdio.h>
 
+__device__ void print(mc<double> x) {
+    printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, x.box.ub);
+};
+
 __global__ void basic_kernel()
 {
-    auto print = [](mc<double> x) { printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, sup(x)); };
     mc<double> a = { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
     mc<double> b = { .cv = 3.0, .cc = 4.0, .box = { .lb = 2.0, .ub = 5.0 } };
 
@@ -50,8 +53,6 @@ __global__ void basic_kernel()
 __global__ void test_pown()
 {
     mc<double> a = { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
-
-    auto print = [](mc<double> x) { printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, sup(x)); };
 
     auto c = pown(a, 5);
     print(c);
