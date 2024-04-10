@@ -306,6 +306,27 @@ inline __device__ mc<T> sqr(mc<T> x)
 }
 
 template<typename T>
+inline __device__ mc<T> abs(mc<T> x)
+{
+    T xmin  = mid(static_cast<T>(0), inf(x), sup(x));
+    T midcv = mid(xmin, x.cv, x.cc);
+
+    T xmax  = abs(inf(x)) >= abs(sup(x)) ? inf(x) : sup(x);
+    T midcc = mid(xmax, x.cv, x.cc);
+
+    T cc = secant_of_convex(midcc, inf(x), sup(x), [](T x) { return abs(x); });
+    return { .cv  = abs(midcv),
+             .cc  = cc,
+             .box = abs(x.box) };
+}
+
+template<typename T>
+inline __device__ mc<T> fabs(mc<T> x)
+{
+    return abs(x);
+}
+
+template<typename T>
 inline __device__ mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
