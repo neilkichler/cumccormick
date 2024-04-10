@@ -384,6 +384,12 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
 }
 
 template<typename T>
+inline __device__ mc<T> pow(mc<T> x, std::integral auto n)
+{
+    return pown(x, n);
+}
+
+template<typename T>
 inline __device__ mc<T> operator+(mc<T> a, mc<T> b)
 {
     return add(a, b);
