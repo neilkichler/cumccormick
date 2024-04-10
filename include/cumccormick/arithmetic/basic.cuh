@@ -240,6 +240,7 @@ inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
     constexpr auto zero = static_cast<T>(0);
 
     T cc;
+    // TODO: Why do we check against sup(x) and inf(x) instead of x.cc and x.cv?
     if (n > 0) {
         if (sup(x) <= zero) {
             midcv = x.cc;
@@ -355,14 +356,12 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
         // TODO: not accounting for pow(x,n) error (2 ulps)
         if (sup(x) <= zero) {
             // for x < 0, pown(x,n_odd) is concave
-            T x_lb = n > 0 ? x.cc : x.cv;
-            cv     = secant_of_concave(x.cv, inf(x), sup(x), [n](T x) { return pow(x, n); });
-            cc     = pow(x_lb, n);
+            cv = secant_of_concave(n > 0 ? x.cv : x.cc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            cc = pow(n > 0 ? x.cc : x.cv, n);
         } else if (inf(x) >= zero) {
             // for x > 0, pown(x,n_odd) is convex
-            T x_lb = n > 0 ? x.cv : x.cc;
-            cv     = pow(x_lb, n);
-            cc     = secant_of_convex(x.cc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            cv = pow(n > 0 ? x.cv : x.cc, n);
+            cc = secant_of_convex(n > 0 ? x.cc : x.cv, inf(x), sup(x), [n](T x) { return pow(x, n); });
         } else {
             // for 0 in x, pown(x,n_odd) is concavoconvex
             if (n > 0) {
