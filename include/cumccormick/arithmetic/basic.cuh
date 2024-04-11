@@ -518,4 +518,44 @@ inline __device__ mc<T> log(mc<T> x)
              .box = log(x.box) };
 }
 
+template<typename T>
+inline __device__ mc<T> max(mc<T> a, mc<T> b)
+{
+    T cc {};
+
+    if (sup(a) <= inf(b)) {
+        cc = b.cc;
+    } else if (sup(b) <= inf(a)) {
+        cc = a.cc;
+    } else {
+        // TODO: think about adding max of multivariate mccormick
+
+        // TODO: check if optimizer removes all the unnecessary cv and IA operations
+        cc = 0.5 * (a + b + abs(a - b)).cc; // uses the fact that max(a,b)= (a + b + abs(a - b)) / 2
+    }
+
+    return { .cv  = max(a.cv, b.cv), // max is a convex function
+             .cc  = cc,
+             .box = max(a.box, b.box) };
+}
+
+template<typename T>
+inline __device__ mc<T> min(mc<T> a, mc<T> b)
+{
+    T cv {};
+
+    if (sup(a) <= inf(b)) {
+        cv = a.cv;
+    } else if (sup(b) <= inf(a)) {
+        cv = b.cv;
+    } else {
+        // TODO: think about adding min of multivariate mccormick
+        cv = 0.5 * (a + b - abs(a - b)).cv; // uses the fact that min(a,b)= (a + b - abs(a - b)) / 2
+    }
+
+    return { .cv  = cv,
+             .cc  = min(a.cc, b.cc),
+             .box = min(a.box, b.box) };
+}
+
 #endif // CUMCCORMICK_ARITHMETIC_BASIC_CUH
