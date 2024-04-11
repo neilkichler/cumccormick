@@ -2,14 +2,15 @@
 
 #include <stdio.h>
 
-__device__ void print(mc<double> x) {
+__device__ void print(mc<double> x)
+{
     printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, x.box.ub);
 };
 
 __global__ void basic_kernel()
 {
-    mc<double> a = { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
-    mc<double> b = { .cv = 3.0, .cc = 4.0, .box = { .lb = 2.0, .ub = 5.0 } };
+    mc<double> a { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
+    mc<double> b { .cv = 3.0, .cc = 4.0, .box = { .lb = 2.0, .ub = 5.0 } };
 
     print(a);
     print(b);
@@ -48,58 +49,86 @@ __global__ void basic_kernel()
     print(r);
     auto s = pown(a - 2.0, 3);
     print(s);
+    auto t = abs(a - 2.0);
+    print(t);
+    auto u = abs(b);
+    print(u);
+    auto v = max(a, b);
+    print(v);
+    auto w = min(a, b);
+    print(w);
 }
 
 __global__ void test_pown()
 {
-    mc<double> a = { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
+    mc<double> a { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
 
-    auto c = pown(a, 5);
+    auto c = pow(a, 5);
     print(c);
-    auto d = pown(a - 2.0, 5);
+    auto d = pow(a - 2.0, 5);
     print(d);
-    auto e = pown(a, 4);
+    auto e = pow(a, 4);
     print(e);
-    auto f = pown(a - 2.0, 4);
+    auto f = pow(a - 2.0, 4);
     print(f);
-    auto g = pown(a - 4.0, 4);
+    auto g = pow(a - 4.0, 4);
     print(g);
-    auto h = pown(a, -4);
+    auto h = pow(a + 0.0001, -4);
     print(h);
-    auto i = pown(a + 1.0, -4);
+    auto i = pow(a + 1.0, -4);
     print(i);
-    auto j = pown(a - 4.0, -4);
+    auto j = pow(a - 4.0, -4);
     print(j);
-    auto k = pown(a - 1.5, -4);
+    auto k = pow(a - 1.5, -4);
     print(k);
-    auto l = pown(a + 2.0, -5);
+    auto l = pow(a + 2.0, -5);
     print(l);
-    auto m = pown(a, -5);
+    auto m = pow(a, -5);
     print(m);
-    auto n = pown(a - 4.0, -5);
+    auto n = pow(a - 4.0, -5);
     print(n);
+    auto o = pow(a + 0.0001, -5);
+    print(o);
+}
+
+template<typename T>
+__device__ bool within_ulps(T x, T y, std::size_t n)
+{
+    if (x == y) {
+        return true;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        x = std::nextafter(x, y);
+
+        if (x == y) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 __global__ void test_fn_kernel()
 {
-    mc<double> x = { .cv = 1.5, .cc = 1.5, .box = { .lb = 1.0, .ub = 2.0 } };
-    mc<double> y = { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.5, .ub = 0.7 } };
-    mc<double> z = { .cv = 0.2, .cc = 1.0, .box = { .lb = -1.0, .ub = 2.0 } };
+    mc<double> x { .cv = 1.5, .cc = 1.5, .box = { .lb = 1.0, .ub = 2.0 } };
+    mc<double> y { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.5, .ub = 0.7 } };
+    mc<double> z { .cv = 0.2, .cc = 1.0, .box = { .lb = -1.0, .ub = 2.0 } };
 
     auto xy = x * y;
-    assert(nextafter(xy.cv, 1) == 0.85);
-    assert(nextafter(xy.cc, 0) == 1.0);
+    assert(within_ulps(xy.cv, 0.85, 1));
+    assert(within_ulps(xy.cc, 1.0, 1));
 
     auto xz = x * z;
-    assert(nextafter(xz.cv, 1) == -0.3);
-    assert(xz.cc == 2.0);
+    assert(within_ulps(xz.cv, -0.3, 1));
+    assert(within_ulps(xz.cc, 2.0, 1));
 
     auto yz = y * z;
-    assert(nextafter(yz.cc, 1) == 0.8);
+    assert(within_ulps(yz.cc, 0.8, 1));
 
-    auto xexp = x * exp(-pown(x, 2)); // correct cv,cc 9.124281806826588e-02, 4.061675774727018e-01
-    printf("xexp.cv: %a, %.15f\n", xexp.cv, xexp.cv);
-    printf("xexp.cc: %a, %.15f\n", xexp.cc, xexp.cc);
+    auto xexp = x * exp(-pow(x, 2));
+    assert(within_ulps(xexp.cv, 0x1.75bb077991bc3p-4, 1));
+    assert(within_ulps(xexp.cc, 0x1.9fea64b7c3615p-2, 1));
 
     // auto sincospow = sin(pown(y, -3)) * cos(pown(y, 2)); // -9.358968236779348e-01, 6.095699354841704e-01
     // printf("sincospow.cv: %a, %.15f\n", sincospow.cv, sincospow.cv);

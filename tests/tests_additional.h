@@ -8,4 +8,5 @@ void tests_additional(cuda_buffers buffers, cuda_streams streams, cuda_events ev
 {
     tests_basic(streams[0], events[0]);
     tests_pown(streams[1], events[1]);
+    tests_fn(streams[2], events[2]);
 }

@@ -12,3 +12,5 @@ void tests_pown(cudaStream_t stream, cudaEvent_t event);
 
 void tests_basic(cudaStream_t stream, cudaEvent_t event);
 
+void tests_fn(cudaStream_t stream, cudaEvent_t event);
+
