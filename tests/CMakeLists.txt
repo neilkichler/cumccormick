@@ -42,5 +42,5 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 # Register tests for use in ctest
-add_test(NAME testcuinterval COMMAND tests)
+add_test(NAME testcumccormick COMMAND tests)
 
