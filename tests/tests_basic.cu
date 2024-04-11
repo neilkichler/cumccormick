@@ -109,6 +109,14 @@ __device__ bool within_ulps(T x, T y, std::size_t n)
     return false;
 }
 
+__device__ auto ackley(auto x, auto y)
+{
+    using std::numbers::e;
+    using std::numbers::pi;
+    return -20.0 * exp(-0.2 * sqrt(0.5 * (x * x + y * y)))
+           - exp(0.5 * (cos(2.0 * pi * x) + cos(2.0 * pi * y))) + e + 20.0;
+}
+
 __global__ void test_fn_kernel()
 {
     mc<double> x { .cv = 1.5, .cc = 1.5, .box = { .lb = 1.0, .ub = 2.0 } };
@@ -133,6 +141,11 @@ __global__ void test_fn_kernel()
     // auto sincospow = sin(pown(y, -3)) * cos(pown(y, 2)); // -9.358968236779348e-01, 6.095699354841704e-01
     // printf("sincospow.cv: %a, %.15f\n", sincospow.cv, sincospow.cv);
     // printf("sincospow.cc: %a, %.15f\n", sincospow.cc, sincospow.cc);
+
+    auto ack = ackley(x, y);
+    // printf("ack.cv: %a, %.15f\n", ack.cv, ack.cv);
+    // printf("ack.cc: %a, %.15f\n", ack.cc, ack.cc);
+
 }
 
 void basic_kernel(cudaStream_t stream)
