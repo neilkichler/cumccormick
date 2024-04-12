@@ -478,6 +478,106 @@ inline __device__ mc<T> operator/(mc<T> a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> cos_refined(mc<T> x)
+{
+    using namespace intrinsic;
+
+    interval<T> cos_box = cos(x.box);
+
+    // TODO: use rounded ops
+
+    // find the argmin and argmax of cos in the interval
+    T argmin = {};
+    T argmax = {};
+    T pi     = std::numbers::pi;
+    // map x into decreasing (positive k) and increasing (negative k) values
+    T k        = std::ceil(-0.5 - inf(x) / (2.0 * std::numbers::pi));
+    T two_pi_k = 2.0 * pi * k;
+    T x_lb     = inf(x) + two_pi_k;
+    T x_ub     = sup(x) + two_pi_k;
+
+    if (x_lb <= 0) {
+        // cos increases
+        if (x_ub <= 0) {
+            // cos monotonically increases in interval
+            argmin = x_lb;
+            argmax = x_ub;
+        } else if (x_ub >= std::numbers::pi) {
+            // more than one period
+            argmin = pi - two_pi_k;
+            argmax = -two_pi_k;
+        } else {
+            // increasing then decreasing
+            argmin = (cos(x_lb) <= cos(x_ub)) ? inf(x) : sup(x); // take smallest of the two endpoints
+            argmax = -two_pi_k;                                  // peak at period of cos and thus cos(argmax)=1
+        }
+    } else {
+        // cos decreases
+        if (x_ub <= pi) {
+            // cos monotonically decreases in interval
+            argmin = x_ub;
+            argmax = x_lb;
+        } else if (x_lb >= std::numbers::pi) {
+            // more than one period
+            argmin = pi * (1.0 - 2.0 * k); // at lower peak
+            argmax = 2.0 * pi * (1.0 - k); // at upper peak
+        } else {
+            // decreasing then increasing
+            argmin = pi * (1.0 - 2.0 * k);
+            argmax = (cos(x_lb) >= cos(x_ub)) ? inf(x) : sup(x);
+        }
+    }
+
+    T midcv = mid(argmin, x.cv, x.cc);
+    T midcc = mid(argmax, x.cv, x.cc);
+
+    auto x_cv    = midcv;
+    auto x_cv_lb = inf(x);
+    auto x_cv_ub = sup(x);
+
+    T cv;
+
+    auto cv_cos_nonconvex_nonconcave = [](T x, T lb, T ub) { return cos(x); };
+
+    if (x_cv <= (pi * (1.0 - 2.0 * k))) {
+        x_ub = min(x_ub, pi);
+        if (x_lb >= 0.5 * pi) {
+            cv = cos(x_cv);
+        } else if (x_lb >= -0.5 * pi && x_ub <= 0.5 * pi) {
+            cv = secant_of_concave(x_cv, x_cv_lb, x_cv_ub, [](T x) { return cos(x); });
+        } else {
+            // nonconvex and nonconcave region
+            cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k, x_lb, x_ub);
+        }
+    } else {
+        T k_upper        = std::floor(-0.5 - sup(x) / (2.0 * std::numbers::pi));
+        T two_pi_k_upper = 2.0 * pi * k_upper;
+        if (x_cv >= (pi * (-1.0 - 2.0 * k_upper))) {
+            T x_ub_2 = sup(x) + two_pi_k_upper;
+            if (x_ub_2 <= -0.5 * pi) {
+                cv = cos(x_cv);
+            } else {
+                // nonconvex and nonconcave region
+                cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_upper,
+                                                 max(two_pi_k_upper, -pi), x_ub_2);
+            }
+        } else {
+            cv = -1.0;
+        }
+    }
+
+    // auto x_cc    = midcc - pi;
+    // auto x_cc_lb = inf(x) - pi;
+    // auto x_cc_ub = sup(x) - pi;
+    //
+    T cc{};
+
+    return { .cv  = cv,
+             .cc  = cc,
+             .box = cos(x.box) };
+}
+
+template<typename T>
 inline __device__ mc<T> cos(mc<T> x)
 {
     using namespace intrinsic;
