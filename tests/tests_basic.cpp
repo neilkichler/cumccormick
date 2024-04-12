@@ -14,3 +14,8 @@ void tests_fn(cudaStream_t stream, cudaEvent_t event)
 {
     fn_kernel(stream);
 }
+
+void tests_bounds(cudaStream_t stream, cudaEvent_t event)
+{
+    bounds_kernel(stream);
+}

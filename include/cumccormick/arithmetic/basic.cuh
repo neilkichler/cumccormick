@@ -507,11 +507,20 @@ inline __device__ mc<T> log(mc<T> x)
 {
     using namespace intrinsic;
 
-    T midcv = mid(inf(x), x.cv, x.cc);
-    T midcc = mid(sup(x), x.cv, x.cc);
+    // since log is monotonically increasing:
+    //
+    //      mid(inf(x), x.cv, x.cc) = x.cv
+    //      mid(sup(x), x.cv, x.cc) = x.cc
+    //
+    T midcv = x.cv;
+    T midcc = x.cc;
 
     // TODO: error in log not accounted for
     T cv = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return log(x); });
+
+    if (inf(x) <= static_cast<T>(0)) {
+        cv = neg_inf<T>();
+    }
 
     return { .cv  = cv,
              .cc  = log(midcc),

@@ -114,7 +114,36 @@ __device__ auto ackley(auto x, auto y)
     using std::numbers::e;
     using std::numbers::pi;
     return -20.0 * exp(-0.2 * sqrt(0.5 * (x * x + y * y)))
-           - exp(0.5 * (cos(2.0 * pi * x) + cos(2.0 * pi * y))) + e + 20.0;
+        - exp(0.5 * (cos(2.0 * pi * x) + cos(2.0 * pi * y))) + e + 20.0;
+}
+
+template<typename T>
+__global__ void contains_samples_check(mc<T> x, T *res, std::integral auto n)
+{
+    // Check that a range of samples are all contained in the mccormick bound
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    auto contains = [](mc<T> x, T y) {
+        return x.cv <= y && y <= x.cc;
+    };
+
+    if (i < n) {
+        T x_sample = x.cv + static_cast<T>(i) * (x.cc - x.cv) / static_cast<T>(n);
+        assert(contains(pow(x, 1), pow(x_sample, 1)));
+        assert(contains(pow(x, 2), pow(x_sample, 2)));
+        assert(contains(pow(x, 3), pow(x_sample, 3)));
+        assert(contains(pow(x, 4), pow(x_sample, 4)));
+        assert(contains(pow(x, 5), pow(x_sample, 5)));
+        assert(contains(abs(x), abs(x_sample)));
+        assert(contains(exp(x), exp(x_sample)));
+        assert(contains(fabs(x), fabs(x_sample)));
+        assert(contains(log(x), log(x_sample)));
+        assert(contains(recip(x), pow(x_sample, -1)));
+        assert(contains(sqr(x), pow(x_sample, 2)));
+        assert(contains(sqrt(x), sqrt(x_sample)));
+        assert(contains(cos(x), cos(x_sample)));
+        assert(contains(sin(x), sin(x_sample)));
+    }
 }
 
 __global__ void test_fn_kernel()
@@ -145,7 +174,17 @@ __global__ void test_fn_kernel()
     auto ack = ackley(x, y);
     // printf("ack.cv: %a, %.15f\n", ack.cv, ack.cv);
     // printf("ack.cc: %a, %.15f\n", ack.cc, ack.cc);
+}
 
+void bounds_kernel(cudaStream_t stream)
+{
+    mc<double> x { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } };
+
+    double *samples_d;
+    constexpr int n_samples = 512;
+    cudaMalloc(&samples_d, n_samples * sizeof(double));
+    contains_samples_check<<<n_samples, 1>>>(x, samples_d, n_samples);
+    cudaFree(samples_d);
 }
 
 void basic_kernel(cudaStream_t stream)
