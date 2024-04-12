@@ -118,7 +118,7 @@ __device__ auto ackley(auto x, auto y)
 }
 
 template<typename T>
-__global__ void contains_samples_check(mc<T> x, T *res, std::integral auto n)
+__global__ void contains_samples_check_univariate(mc<T> x, std::integral auto n)
 {
     // Check that a range of samples are all contained in the mccormick bound
     int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -180,11 +180,8 @@ void bounds_kernel(cudaStream_t stream)
 {
     mc<double> x { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } };
 
-    double *samples_d;
     constexpr int n_samples = 512;
-    cudaMalloc(&samples_d, n_samples * sizeof(double));
-    contains_samples_check<<<n_samples, 1>>>(x, samples_d, n_samples);
-    cudaFree(samples_d);
+    contains_samples_check_univariate<<<n_samples, 1>>>(x, n_samples);
 }
 
 void basic_kernel(cudaStream_t stream)
