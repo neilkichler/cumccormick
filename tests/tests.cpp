@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
     for (auto &event : events)
         CUDA_CHECK(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
 
-    tests_additional<double>(buffers, streams, events);
+    cuda_ctx ctx { buffers, streams, events };
+    tests_additional<double>(ctx);
 
     for (auto &event : events)
         CUDA_CHECK(cudaEventDestroy(event));

@@ -3,8 +3,8 @@
 #ifndef CUINTERVAL_TESTS_COMMON_H
 #define CUINTERVAL_TESTS_COMMON_H
 
-#include <cstdio>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <span>
 
@@ -13,14 +13,22 @@
 static constexpr std::size_t n_streams = 4;
 
 using cuda_streams = std::span<cudaStream_t, n_streams>;
-using cuda_events = std::span<cudaEvent_t, n_streams>;
+using cuda_events  = std::span<cudaEvent_t, n_streams>;
 
-struct cuda_buffer {
+struct cuda_buffer
+{
     char *host;
     char *device;
 };
 
 using cuda_buffers = std::span<cuda_buffer, n_streams>;
+
+struct cuda_ctx
+{
+    cuda_buffers buffers;
+    cuda_streams streams;
+    cuda_events events;
+};
 
 #define CUDA_CHECK(x)                                                                \
     do {                                                                             \
@@ -33,6 +41,4 @@ using cuda_buffers = std::span<cuda_buffer, n_streams>;
         }                                                                            \
     } while (0)
 
-
 #endif // CUINTERVAL_TESTS_COMMON_H
-

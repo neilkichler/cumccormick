@@ -4,10 +4,10 @@
 #include "tests_basic.h"
 
 template<typename T>
-void tests_additional(cuda_buffers buffers, cuda_streams streams, cuda_events events)
+void tests_additional(cuda_ctx ctx)
 {
-    tests_basic(streams[0], events[0]);
-    tests_pown(streams[1], events[1]);
-    tests_fn(streams[2], events[2]);
-    tests_bounds(streams[3], events[3]);
+    tests_basic(ctx.streams[0], ctx.events[0]);
+    tests_pown(ctx.streams[1], ctx.events[1]);
+    tests_fn(ctx.streams[2], ctx.events[2]);
+    tests_bounds(ctx.streams[3], ctx.events[3]);
 }
