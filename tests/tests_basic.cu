@@ -138,11 +138,33 @@ __global__ void contains_samples_check_univariate(mc<T> x, std::integral auto n)
         assert(contains(exp(x), exp(x_sample)));
         assert(contains(fabs(x), fabs(x_sample)));
         assert(contains(log(x), log(x_sample)));
+        assert(contains(neg(x), -x_sample));
         assert(contains(recip(x), pow(x_sample, -1)));
         assert(contains(sqr(x), pow(x_sample, 2)));
         assert(contains(sqrt(x), sqrt(x_sample)));
         assert(contains(cos(x), cos(x_sample)));
         assert(contains(sin(x), sin(x_sample)));
+    }
+}
+
+template<typename T>
+__global__ void contains_samples_check_bivariate(mc<T> x, mc<T> y, std::integral auto n)
+{
+    // Check that a range of samples are all contained in the mccormick bound
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    auto contains = [](mc<T> x, T y) {
+        return x.cv <= y && y <= x.cc;
+    };
+
+    if (i < n) {
+        T x_sample = x.cv + static_cast<T>(i) * (x.cc - x.cv) / static_cast<T>(n);
+        T y_sample = y.cv + static_cast<T>(i) * (y.cc - y.cv) / static_cast<T>(n);
+        assert(contains(x + y, x_sample + y_sample));
+        assert(contains(x - y, x_sample - y_sample));
+        assert(contains(x * y, x_sample * y_sample));
+        assert(contains(max(x,y), max(x_sample, y_sample)));
+        assert(contains(min(x,y), min(x_sample, y_sample)));
     }
 }
 
@@ -179,9 +201,11 @@ __global__ void test_fn_kernel()
 void bounds_kernel(cudaStream_t stream)
 {
     mc<double> x { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } };
+    mc<double> y { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } };
 
     constexpr int n_samples = 512;
     contains_samples_check_univariate<<<n_samples, 1>>>(x, n_samples);
+    contains_samples_check_bivariate<<<n_samples, 1>>>(x, y, n_samples);
 }
 
 void basic_kernel(cudaStream_t stream)
