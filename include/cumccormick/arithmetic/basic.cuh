@@ -229,59 +229,9 @@ inline __device__ T sup(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
-{
-    using namespace intrinsic;
-
-    T zmin;
-    T zmax;
-    T midcv;
-    T midcc;
-    constexpr auto zero = static_cast<T>(0);
-
-    T cc;
-    // TODO: Why do we check against sup(x) and inf(x) instead of x.cc and x.cv?
-    if (n > 0) {
-        if (sup(x) <= zero) {
-            midcv = x.cc;
-            midcc = x.cv;
-        } else if (inf(x) >= zero) {
-            midcv = x.cv;
-            midcc = x.cc;
-        } else {
-            midcv = mid(zero, x.cv, x.cc);
-            midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
-        }
-    } else {
-        if (sup(x) <= zero) {
-            midcv = x.cv;
-            midcc = x.cc;
-        } else if (inf(x) >= zero) {
-            midcv = x.cc;
-            midcc = x.cv;
-        } else {
-            midcv = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
-            return { .cv  = pow(midcv, n),
-                     .cc  = intrinsic::pos_inf<T>(),
-                     .box = pown(x.box, n) };
-        }
-    }
-
-    // TODO: floating point error in pow not accounted for
-    cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
-
-    return { .cv  = pow(midcv, n),
-             .cc  = cc,
-             .box = pown(x.box, n) };
-}
-
-template<typename T>
 inline __device__ mc<T> sqr(mc<T> x)
 {
     using namespace intrinsic;
-
-    T zmin;
-    T zmax;
 
     T midcv;
     T midcc;
@@ -349,6 +299,51 @@ inline __device__ mc<T> sqrt(mc<T> x)
     return { .cv  = cv,
              .cc  = intrinsic::sqrt_up(midcc),
              .box = sqrt(x.box) };
+}
+
+template<typename T>
+inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
+{
+    using namespace intrinsic;
+
+    T midcv;
+    T midcc;
+    constexpr auto zero = static_cast<T>(0);
+
+    T cc;
+    // TODO: Why do we check against sup(x) and inf(x) instead of x.cc and x.cv?
+    if (n > 0) {
+        if (sup(x) <= zero) {
+            midcv = x.cc;
+            midcc = x.cv;
+        } else if (inf(x) >= zero) {
+            midcv = x.cv;
+            midcc = x.cc;
+        } else {
+            midcv = mid(zero, x.cv, x.cc);
+            midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
+        }
+    } else {
+        if (sup(x) <= zero) {
+            midcv = x.cv;
+            midcc = x.cc;
+        } else if (inf(x) >= zero) {
+            midcv = x.cc;
+            midcc = x.cv;
+        } else {
+            midcv = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
+            return { .cv  = pow(midcv, n),
+                     .cc  = intrinsic::pos_inf<T>(),
+                     .box = pown(x.box, n) };
+        }
+    }
+
+    // TODO: floating point error in pow not accounted for
+    cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+
+    return { .cv  = pow(midcv, n),
+             .cc  = cc,
+             .box = pown(x.box, n) };
 }
 
 template<typename T>
