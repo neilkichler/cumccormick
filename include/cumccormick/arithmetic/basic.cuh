@@ -130,6 +130,9 @@ inline __device__ mc<T> mul(mc<T> a, mc<T> b)
 template<typename T, typename F>
 inline __device__ T secant_of_concave(T x, T lb, T ub, F &&f)
 {
+    // TODO: We could also just pass in the f(ub) and f(lb)
+    //       and not the function.
+
     // TODO: Does not consider rounding of f
     using namespace intrinsic;
 
@@ -478,24 +481,98 @@ inline __device__ mc<T> operator/(mc<T> a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> cos_refined(mc<T> x)
+inline __device__ T golden_section(T x0, T lb, T ub,
+                                   unsigned int maxiter               = 50,
+                                   std::floating_point auto tolerance = 1e-8,
+                                   std::floating_point auto epsilon   = 1e-10)
+{
+    auto f  = [](T x) { return cos(x); };
+    auto df = [](T x) { return -sin(x); };
+
+    // TODO: implement
+}
+
+template<std::floating_point T>
+struct solver_options
+{
+    int maxiter { 50 };
+    T tolerance { 1e-8 };
+    T epsilon { 1e-10 };
+};
+
+#include <stdio.h>
+
+template<typename T>
+inline __device__ T root_newton(T x0, T lb, T ub, solver_options<T> options = {})
+{
+    // Version of Newton's method with bounded range for x in [lb, ub].
+    auto [maxiter, tolerance, epsilon] = options;
+
+    T x = mid(x0, lb, ub);
+
+    // auto f  = [](T x) { return cos(x); };
+    // auto df = [](T x) { return -sin(x); };
+    //
+
+    // We require that the slope of the connection line is equal to the slope of the
+    // function, i.e., find point x in [a, b] s.t.
+    //
+    //          (f(x) - f(a)) / (x - a) = f'(x)
+    //
+    // So,
+    //          f(x) - f(a) - (x - a) * f'(x) = 0
+    //
+    // Which can be solved via Newton's method, or any other root finding method.
+    // For more details, see p.16 of McCormick's paper [1].
+    //
+    // [1] https://link.springer.com/article/10.1007/BF01580665
+    auto f  = [](T x) { auto a = 0.0; return (x - a) * sin(x) + cos(x) - cos(a); };
+    auto df = [](T x) { auto a = 0.0; return (x - a) * cos(x); };
+
+    for (int i = 0; i < maxiter; i++) {
+        T y    = f(x);
+        T dydx = df(x);
+
+        if (abs(dydx) < epsilon) {
+            // perform golden section search if dydx is close to zero.
+            assert(false && "dydx is too close to zero");
+        }
+
+        T newton_step = y / dydx;
+        if ((x == lb && newton_step > 0.0) || (x == ub && newton_step < 0.0)) {
+            return x;
+        }
+
+        T x_new = x - y / dydx;
+        x_new   = mid(x_new, lb, ub);
+
+        if (abs(x_new - x) <= tolerance) {
+            return x_new;
+        }
+
+        x = x_new;
+    }
+
+    // did not reach given tolerance in maxiter
+    return x;
+}
+
+template<typename T>
+inline __device__ mc<T> cos(mc<T> x)
 {
     using namespace intrinsic;
 
-    interval<T> cos_box = cos(x.box);
-
     // TODO: use rounded ops
 
-    // find the argmin and argmax of cos in the interval
-    T argmin = {};
-    T argmax = {};
-    T pi     = std::numbers::pi;
-    // map x into decreasing (positive k) and increasing (negative k) values
-    T k        = std::ceil(-0.5 - inf(x) / (2.0 * std::numbers::pi));
-    T two_pi_k = 2.0 * pi * k;
-    T x_lb     = inf(x) + two_pi_k;
-    T x_ub     = sup(x) + two_pi_k;
+    T argmin      = {};
+    T argmax      = {};
+    T pi          = std::numbers::pi;
+    T k           = std::ceil(-0.5 - inf(x) / (2.0 * std::numbers::pi));
+    T two_pi_k_lb = 2.0 * pi * k;
+    T x_lb        = inf(x) + two_pi_k_lb;
+    T x_ub        = sup(x) + two_pi_k_lb;
 
+    // find argmin and argmax for midcc/midcv calculcation
     if (x_lb <= 0) {
         // cos increases
         if (x_ub <= 0) {
@@ -504,12 +581,12 @@ inline __device__ mc<T> cos_refined(mc<T> x)
             argmax = x_ub;
         } else if (x_ub >= std::numbers::pi) {
             // more than one period
-            argmin = pi - two_pi_k;
-            argmax = -two_pi_k;
+            argmin = pi - two_pi_k_lb;
+            argmax = -two_pi_k_lb;
         } else {
             // increasing then decreasing
             argmin = (cos(x_lb) <= cos(x_ub)) ? inf(x) : sup(x); // take smallest of the two endpoints
-            argmax = -two_pi_k;                                  // peak at period of cos and thus cos(argmax)=1
+            argmax = -two_pi_k_lb;                               // peak at period of cos and thus cos(argmax)=1
         }
     } else {
         // cos decreases
@@ -531,46 +608,84 @@ inline __device__ mc<T> cos_refined(mc<T> x)
     T midcv = mid(argmin, x.cv, x.cc);
     T midcc = mid(argmax, x.cv, x.cc);
 
-    auto x_cv    = midcv;
-    auto x_cv_lb = inf(x);
-    auto x_cv_ub = sup(x);
+    auto cv_cos = [pi, two_pi_k_lb, k](T x_cv, T x_cv_lb, T x_cv_ub) {
+        auto cv_cos_nonconvex_nonconcave = [](T x, T lb, T ub) {
+            bool left;
+            T x0;
+            T xm;
 
-    T cv;
+            if (abs(lb) <= abs(ub)) {
+                left = false;
+                x0   = ub;
+                xm   = lb;
+            } else {
+                left = true;
+                x0   = lb;
+                xm   = ub;
+            }
 
-    auto cv_cos_nonconvex_nonconcave = [](T x, T lb, T ub) { return cos(x); };
+            // TODO: We could potentially use the Interval Newton method instead.
+            //       Or a better root finding method: Halley's method or Brent's method.
 
-    if (x_cv <= (pi * (1.0 - 2.0 * k))) {
-        x_ub = min(x_ub, pi);
-        if (x_lb >= 0.5 * pi) {
-            cv = cos(x_cv);
-        } else if (x_lb >= -0.5 * pi && x_ub <= 0.5 * pi) {
-            cv = secant_of_concave(x_cv, x_cv_lb, x_cv_ub, [](T x) { return cos(x); });
-        } else {
-            // nonconvex and nonconcave region
-            cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k, x_lb, x_ub);
-        }
-    } else {
-        T k_upper        = std::floor(-0.5 - sup(x) / (2.0 * std::numbers::pi));
-        T two_pi_k_upper = 2.0 * pi * k_upper;
-        if (x_cv >= (pi * (-1.0 - 2.0 * k_upper))) {
-            T x_ub_2 = sup(x) + two_pi_k_upper;
-            if (x_ub_2 <= -0.5 * pi) {
+            // TODO: Analytic: We know the taylor/pade approximation of
+            //                 (x - a) * sin(x) + cos(x) - cos(a)
+            //                 Make use of it for solving for the roots directly?
+
+            T xj = root_newton(x0, lb, ub);
+
+            if (left && x <= xj || !left && x >= xj) {
+                return cos(x);
+            } else {
+                return secant_of_concave(x, xj, xm, [](T x) { return cos(x); });
+            }
+
+            return cos(x);
+        };
+
+        T cv;
+        if (x_cv <= (pi * (1.0 - 2.0 * k))) {
+            T x_cv_ub_1 = min(x_cv_ub, pi);
+            T x_cv_lb_1 = x_cv_lb;
+            if (x_cv_lb_1 >= 0.5 * pi) {
+                // convex region
                 cv = cos(x_cv);
+            } else if (x_cv_lb_1 >= -0.5 * pi && x_cv_ub_1 <= 0.5 * pi) {
+                // concave region
+                cv = secant_of_concave(x_cv, x_cv_lb_1, x_cv_ub_1, [](T x) { return cos(x); });
             } else {
                 // nonconvex and nonconcave region
-                cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_upper,
-                                                 max(two_pi_k_upper, -pi), x_ub_2);
+                cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_lb, x_cv_lb_1, x_cv_ub_1);
             }
         } else {
-            cv = -1.0;
+            T k_upper     = std::floor(-0.5 - x_cv_ub / (2.0 * pi));
+            T two_pi_k_ub = 2.0 * pi * k_upper;
+            if (x_cv >= (pi * (-1.0 - 2.0 * k_upper))) {
+                T x_cv_ub_2 = x_cv_ub + two_pi_k_ub;
+                if (x_cv_ub_2 <= -0.5 * pi) {
+                    cv = cos(x_cv);
+                } else {
+                    // nonconvex and nonconcave region
+                    cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_ub,
+                                                     max(two_pi_k_ub, -pi), x_cv_ub_2);
+                }
+            } else {
+                cv = -1.0;
+            }
         }
-    }
+        return cv;
+    };
 
-    // auto x_cc    = midcc - pi;
-    // auto x_cc_lb = inf(x) - pi;
-    // auto x_cc_ub = sup(x) - pi;
-    //
-    T cc{};
+    // TODO: we could merge cv and cc together, reducing the number of branches.
+
+    auto x_cv    = midcv;
+    auto x_cv_lb = x_lb;
+    auto x_cv_ub = x_ub;
+    T cv         = cv_cos(x_cv, x_cv_lb, x_cv_ub);
+
+    auto x_cc    = midcc - pi;
+    auto x_cc_lb = x_lb - pi;
+    auto x_cc_ub = x_ub - pi;
+    T cc         = -cv_cos(x_cc, x_cc_lb, x_cc_ub);
 
     return { .cv  = cv,
              .cc  = cc,
@@ -578,7 +693,7 @@ inline __device__ mc<T> cos_refined(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> cos(mc<T> x)
+inline __device__ mc<T> cos_box(mc<T> x)
 {
     using namespace intrinsic;
 
