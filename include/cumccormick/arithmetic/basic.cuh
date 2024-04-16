@@ -557,10 +557,9 @@ inline __device__ mc<T> cos(mc<T> x)
             // cos monotonically increases in interval
             argmin = x_lb;
             argmax = x_ub;
-        } else if (x_ub_centered >= std::numbers::pi) {
+        } else if (x_ub_centered >= pi) {
             // more than one period
-            argmin = pi - two_pi_k_lb;
-            argmax = -two_pi_k_lb;
+            return { .cv = -1.0, .cc = 1.0, .box = { -1.0, 1.0 } };
         } else {
             // increasing then decreasing
             argmin = (cos(x_lb_centered) <= cos(x_ub_centered)) ? x_lb : x_ub; // take smallest of the two endpoints
@@ -572,10 +571,9 @@ inline __device__ mc<T> cos(mc<T> x)
             // cos monotonically decreases in interval
             argmin = x_ub;
             argmax = x_lb;
-        } else if (x_lb_centered >= std::numbers::pi) {
+        } else if (x_lb_centered >= pi) {
             // more than one period
-            argmin = pi * (1.0 - 2.0 * k); // at lower peak
-            argmax = 2.0 * pi * (1.0 - k); // at upper peak
+            return { .cv = -1.0, .cc = 1.0, .box = { -1.0, 1.0 } };
         } else {
             // decreasing then increasing
             argmin = pi * (1.0 - 2.0 * k);
