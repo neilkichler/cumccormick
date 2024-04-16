@@ -480,18 +480,6 @@ inline __device__ mc<T> operator/(mc<T> a, mc<T> b)
     return div(a, b);
 }
 
-template<typename T>
-inline __device__ T golden_section(T x0, T lb, T ub,
-                                   unsigned int maxiter               = 50,
-                                   std::floating_point auto tolerance = 1e-8,
-                                   std::floating_point auto epsilon   = 1e-10)
-{
-    auto f  = [](T x) { return cos(x); };
-    auto df = [](T x) { return -sin(x); };
-
-    // TODO: implement
-}
-
 template<std::floating_point T>
 struct solver_options
 {
@@ -500,34 +488,20 @@ struct solver_options
     T epsilon { 1e-10 };
 };
 
-#include <stdio.h>
+// template<typename T>
+// inline __device__ interval<T> golden_section(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
+// {
+//     auto [maxiter, tolerance, epsilon] = options;
+//     // TODO: implement
+// }
 
 template<typename T>
-inline __device__ T root_newton(T x0, T lb, T ub, solver_options<T> options = {})
+inline __device__ T root_newton(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
 {
     // Version of Newton's method with bounded range for x in [lb, ub].
     auto [maxiter, tolerance, epsilon] = options;
 
     T x = mid(x0, lb, ub);
-
-    // auto f  = [](T x) { return cos(x); };
-    // auto df = [](T x) { return -sin(x); };
-    //
-
-    // We require that the slope of the connection line is equal to the slope of the
-    // function, i.e., find point x in [a, b] s.t.
-    //
-    //          (f(x) - f(a)) / (x - a) = f'(x)
-    //
-    // So,
-    //          f(x) - f(a) - (x - a) * f'(x) = 0
-    //
-    // Which can be solved via Newton's method, or any other root finding method.
-    // For more details, see p.16 of McCormick's paper [1].
-    //
-    // [1] https://link.springer.com/article/10.1007/BF01580665
-    auto f  = [](T x) { auto a = 0.0; return (x - a) * sin(x) + cos(x) - cos(a); };
-    auto df = [](T x) { auto a = 0.0; return (x - a) * cos(x); };
 
     for (int i = 0; i < maxiter; i++) {
         T y    = f(x);
@@ -567,49 +541,67 @@ inline __device__ mc<T> cos(mc<T> x)
     T argmin      = {};
     T argmax      = {};
     T pi          = std::numbers::pi;
-    T k           = std::ceil(-0.5 - inf(x) / (2.0 * std::numbers::pi));
+    T k           = std::ceil(-0.5 - inf(x) / (2.0 * pi));
     T two_pi_k_lb = 2.0 * pi * k;
-    T x_lb        = inf(x) + two_pi_k_lb;
-    T x_ub        = sup(x) + two_pi_k_lb;
+    T x_lb        = inf(x);
+    T x_ub        = sup(x);
+
+    // We center the x around the interval [-pi, pi]
+    T x_lb_centered = x_lb + two_pi_k_lb;
+    T x_ub_centered = x_ub + two_pi_k_lb;
 
     // find argmin and argmax for midcc/midcv calculcation
-    if (x_lb <= 0) {
+    if (x_lb_centered <= 0) {
         // cos increases
-        if (x_ub <= 0) {
+        if (x_ub_centered <= 0) {
             // cos monotonically increases in interval
             argmin = x_lb;
             argmax = x_ub;
-        } else if (x_ub >= std::numbers::pi) {
+        } else if (x_ub_centered >= std::numbers::pi) {
             // more than one period
             argmin = pi - two_pi_k_lb;
             argmax = -two_pi_k_lb;
         } else {
             // increasing then decreasing
-            argmin = (cos(x_lb) <= cos(x_ub)) ? inf(x) : sup(x); // take smallest of the two endpoints
-            argmax = -two_pi_k_lb;                               // peak at period of cos and thus cos(argmax)=1
+            argmin = (cos(x_lb_centered) <= cos(x_ub_centered)) ? x_lb : x_ub; // take smallest of the two endpoints
+            argmax = -two_pi_k_lb;                                             // peak at period of cos and thus cos(argmax)=1
         }
     } else {
         // cos decreases
-        if (x_ub <= pi) {
+        if (x_ub_centered <= pi) {
             // cos monotonically decreases in interval
             argmin = x_ub;
             argmax = x_lb;
-        } else if (x_lb >= std::numbers::pi) {
+        } else if (x_lb_centered >= std::numbers::pi) {
             // more than one period
             argmin = pi * (1.0 - 2.0 * k); // at lower peak
             argmax = 2.0 * pi * (1.0 - k); // at upper peak
         } else {
             // decreasing then increasing
             argmin = pi * (1.0 - 2.0 * k);
-            argmax = (cos(x_lb) >= cos(x_ub)) ? inf(x) : sup(x);
+            argmax = (cos(x_lb_centered) >= cos(x_ub_centered)) ? x_lb : x_ub;
         }
     }
 
+    // printf("argmin is %.15g\n", argmin);
     T midcv = mid(argmin, x.cv, x.cc);
     T midcc = mid(argmax, x.cv, x.cc);
 
-    auto cv_cos = [pi, two_pi_k_lb, k](T x_cv, T x_cv_lb, T x_cv_ub) {
+    auto cv_cos = [x_lb, x_ub, pi, two_pi_k_lb, k](T x_cv, T x_cv_lb, T x_cv_ub) {
         auto cv_cos_nonconvex_nonconcave = [](T x, T lb, T ub) {
+            // We require that the slope of the connection line is equal to the slope of the
+            // function, i.e., find point x in [a, b] s.t.
+            //
+            //          (f(x) - f(a)) / (x - a) = f'(x)
+            //
+            // So,
+            //          f(x) - f(a) - (x - a) * f'(x) = 0
+            //
+            // Which can be solved via Newton's method, or any other root finding method.
+            // For more details, see p.16 of McCormick's paper [1].
+            //
+            // [1] https://link.springer.com/article/10.1007/BF01580665
+
             bool left;
             T x0;
             T xm;
@@ -624,17 +616,23 @@ inline __device__ mc<T> cos(mc<T> x)
                 xm   = ub;
             }
 
-            // TODO: We could potentially use the Interval Newton method instead.
+            // NOTE: We could potentially use the Interval Newton method instead.
             //       Or a better root finding method: Halley's method or Brent's method.
 
-            // TODO: Analytic: We know the taylor/pade approximation of
+            // NOTE: Analytic: We know the taylor/pade approximation of
             //                 (x - a) * sin(x) + cos(x) - cos(a)
             //                 Make use of it for solving for the roots directly?
 
-            T xj = root_newton(x0, lb, ub);
+            // NOTE: Currently we assume that the root is always x=a. Make sure that this 
+            //       is always correct. It allows us to skip the rootfind.
+            T xj = xm;
+
+            // auto f  = [xm](T x) { return (x - xm) * sin(x) + cos(x) - cos(xm); };
+            // auto df = [xm](T x) { return (x - xm) * cos(x); };
+            // T xj = root_newton(f, df, x0, lb, ub);
 
             if (left && x <= xj || !left && x >= xj) {
-                return cos(x);
+                return next_after(cos(x), -1.0);
             } else {
                 return secant_of_concave(x, xj, xm, [](T x) { return cos(x); });
             }
@@ -651,7 +649,7 @@ inline __device__ mc<T> cos(mc<T> x)
                 cv = cos(x_cv);
             } else if (x_cv_lb_1 >= -0.5 * pi && x_cv_ub_1 <= 0.5 * pi) {
                 // concave region
-                cv = secant_of_concave(x_cv, x_cv_lb_1, x_cv_ub_1, [](T x) { return cos(x); });
+                cv = secant_of_concave(x_cv, x_lb, x_ub, [](T x) { return cos(x); });
             } else {
                 // nonconvex and nonconcave region
                 cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_lb, x_cv_lb_1, x_cv_ub_1);
@@ -678,13 +676,13 @@ inline __device__ mc<T> cos(mc<T> x)
     // TODO: we could merge cv and cc together, reducing the number of branches.
 
     auto x_cv    = midcv;
-    auto x_cv_lb = x_lb;
-    auto x_cv_ub = x_ub;
+    auto x_cv_lb = x_lb_centered;
+    auto x_cv_ub = x_ub_centered;
     T cv         = cv_cos(x_cv, x_cv_lb, x_cv_ub);
 
     auto x_cc    = midcc - pi;
-    auto x_cc_lb = x_lb - pi;
-    auto x_cc_ub = x_ub - pi;
+    auto x_cc_lb = x_lb_centered - pi;
+    auto x_cc_ub = x_ub_centered - pi;
     T cc         = -cv_cos(x_cc, x_cc_lb, x_cc_ub);
 
     return { .cv  = cv,

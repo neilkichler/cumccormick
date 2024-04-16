@@ -142,8 +142,8 @@ __global__ void contains_samples_check_univariate(mc<T> x, std::integral auto n)
         assert(contains(recip(x), pow(x_sample, -1)));
         assert(contains(sqr(x), pow(x_sample, 2)));
         assert(contains(sqrt(x), sqrt(x_sample)));
-        // assert(contains(cos(x), cos(x_sample)));
-        // assert(contains(sin(x), sin(x_sample)));
+        assert(contains(cos(x), cos(x_sample)));
+        assert(contains(sin(x), sin(x_sample)));
     }
 }
 
