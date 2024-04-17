@@ -571,7 +571,7 @@ inline __device__ mc<T> cos(mc<T> x)
             // cos monotonically decreases in interval
             argmin = x_ub;
             argmax = x_lb;
-        } else if (x_lb_centered >= pi) {
+        } else if (x_ub_centered >= 2.0 * pi) {
             // more than one period
             return { .cv = -1.0, .cc = 1.0, .box = { -1.0, 1.0 } };
         } else {
@@ -581,11 +581,12 @@ inline __device__ mc<T> cos(mc<T> x)
         }
     }
 
-    // printf("argmin is %.15g\n", argmin);
     T midcv = mid(argmin, x.cv, x.cc);
     T midcc = mid(argmax, x.cv, x.cc);
 
-    auto cv_cos = [x_lb, x_ub, pi, two_pi_k_lb, k](T x_cv, T x_cv_lb, T x_cv_ub) {
+    auto cv_cos = [x_lb, x_ub, pi](T x_cv, T x_cv_lb, T x_cv_ub) {
+        T k                              = std::ceil(-0.5 - x_cv_lb / (2.0 * pi));
+        T two_pi_k_lb                    = 2.0 * pi * k;
         auto cv_cos_nonconvex_nonconcave = [](T x, T lb, T ub) {
             // We require that the slope of the connection line is equal to the slope of the
             // function, i.e., find point x in [a, b] s.t.
@@ -621,7 +622,7 @@ inline __device__ mc<T> cos(mc<T> x)
             //                 (x - a) * sin(x) + cos(x) - cos(a)
             //                 Make use of it for solving for the roots directly?
 
-            // NOTE: Currently we assume that the root is always x=a. Make sure that this 
+            // NOTE: Currently we assume that the root is always x=a. Make sure that this
             //       is always correct. It allows us to skip the rootfind.
             T xj = xm;
 
@@ -640,8 +641,9 @@ inline __device__ mc<T> cos(mc<T> x)
 
         T cv;
         if (x_cv <= (pi * (1.0 - 2.0 * k))) {
-            T x_cv_ub_1 = min(x_cv_ub, pi);
-            T x_cv_lb_1 = x_cv_lb;
+            T x_cv_ub_1 = min(x_cv_ub + two_pi_k_lb, pi);
+            T x_cv_lb_1 = x_cv_lb + two_pi_k_lb;
+
             if (x_cv_lb_1 >= 0.5 * pi) {
                 // convex region
                 cv = cos(x_cv);
@@ -653,12 +655,12 @@ inline __device__ mc<T> cos(mc<T> x)
                 cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_lb, x_cv_lb_1, x_cv_ub_1);
             }
         } else {
-            T k_upper     = std::floor(-0.5 - x_cv_ub / (2.0 * pi));
+            T k_upper     = std::floor(0.5 - x_cv_ub / (2.0 * pi));
             T two_pi_k_ub = 2.0 * pi * k_upper;
             if (x_cv >= (pi * (-1.0 - 2.0 * k_upper))) {
                 T x_cv_ub_2 = x_cv_ub + two_pi_k_ub;
                 if (x_cv_ub_2 <= -0.5 * pi) {
-                    cv = cos(x_cv);
+                    cv = next_after(next_after(next_after(cos(x_cv), -1.0), -1.0), -1.0);
                 } else {
                     // nonconvex and nonconcave region
                     cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_ub,
@@ -671,17 +673,16 @@ inline __device__ mc<T> cos(mc<T> x)
         return cv;
     };
 
-    // TODO: we could merge cv and cc together, reducing the number of branches.
-
+    auto x_cv_lb = x_lb;
+    auto x_cv_ub = x_ub;
     auto x_cv    = midcv;
-    auto x_cv_lb = x_lb_centered;
-    auto x_cv_ub = x_ub_centered;
     T cv         = cv_cos(x_cv, x_cv_lb, x_cv_ub);
 
-    auto x_cc    = midcc - pi;
-    auto x_cc_lb = x_lb_centered - pi;
-    auto x_cc_ub = x_ub_centered - pi;
-    T cc         = -cv_cos(x_cc, x_cc_lb, x_cc_ub);
+    auto x_cc    = sub_down(midcc, pi);
+    auto x_cc_lb = sub_down(x_lb, pi);
+    auto x_cc_ub = sub_down(x_ub, pi);
+
+    T cc = -cv_cos(x_cc, x_cc_lb, x_cc_ub);
 
     return { .cv  = cv,
              .cc  = cc,
@@ -705,7 +706,7 @@ inline __device__ mc<T> sin(mc<T> x)
 {
     using namespace intrinsic;
 
-    return cos(x - static_cast<T>(M_PI_2));
+    return cos(x - std::numbers::pi / static_cast<T>(2.0));
 }
 
 template<typename T>
