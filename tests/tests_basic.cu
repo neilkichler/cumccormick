@@ -203,6 +203,11 @@ void bounds_kernel(cudaStream_t stream)
     // mc<double> x { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } };
     // mc<double> x { .cv = 50.6, .cc = 100.65, .box = { .lb = 50.0, .ub = 100.7 } };
     mc<double> x { .cv = 7.6, .cc = 7.65, .box = { .lb = 6.1, .ub = 7.7 } };
+    // mc<double> x { .cv = 3.6, .cc = 3.85, .box = { .lb = -4.1, .ub = 7.7 } };
+    // mc<double> x { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.1, .ub = 0.1 } };
+    // mc<double> x { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.01, .ub = 0.01 } };
+    // mc<double> x { .cv = 10000.01, .cc = 10001.01, .box = { .lb = 0.0, .ub = 100000.0 } };
+    // mc<double> x { .cv = -3.96, .cc = -3.25, .box = { .lb = -4.1, .ub = -3.1 } };
     mc<double> y { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } };
 
     constexpr int n_samples = 512;

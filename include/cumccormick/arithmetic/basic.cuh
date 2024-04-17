@@ -649,7 +649,7 @@ inline __device__ mc<T> cos(mc<T> x)
                 cv = cos(x_cv);
             } else if (x_cv_lb_1 >= -0.5 * pi && x_cv_ub_1 <= 0.5 * pi) {
                 // concave region
-                cv = secant_of_concave(x_cv, x_lb, x_ub, [](T x) { return cos(x); });
+                cv = secant_of_concave(x_cv, x_cv_lb, x_cv_ub, [](T x) { return cos(x); });
             } else {
                 // nonconvex and nonconcave region
                 cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_lb, x_cv_lb_1, x_cv_ub_1);
