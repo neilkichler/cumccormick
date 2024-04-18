@@ -252,7 +252,7 @@ inline __device__ mc<T> sqr(mc<T> x)
         midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
     }
 
-    T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_up(inf(x), sup(x)));
+    T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_down(inf(x), sup(x)));
     return { .cv  = mul_down(midcv, midcv),
              .cc  = cc,
              .box = sqr(x.box) };
