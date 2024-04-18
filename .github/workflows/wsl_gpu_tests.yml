@@ -32,7 +32,7 @@ jobs:
     - name: run ctest
       run: ctest --preset debug
 
-    - name: Upload coverage reports to Codecov
+    - name: upload coverage reports to codecov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
