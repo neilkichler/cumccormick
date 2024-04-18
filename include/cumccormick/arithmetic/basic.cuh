@@ -283,10 +283,12 @@ template<typename T>
 inline __device__ mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
-    // TODO: error in exp not accounted for
-    T cc = secant_of_convex(x.cc, inf(x), sup(x), [](T x) { return exp(x); });
+    // TODO: error in exp not accounted for in secant computation
+    T cc = exp(sup(x)) == intrinsic::pos_inf<T>()
+        ? intrinsic::pos_inf<T>()
+        : secant_of_convex(x.cc, inf(x), sup(x), [](T x) { return exp(x); });
 
-    return { .cv  = intrinsic::next_after(exp(x.cv), static_cast<T>(0)),
+    return { .cv  = next_after(exp(x.cv), static_cast<T>(0)),
              .cc  = cc,
              .box = exp(x.box) };
 }
