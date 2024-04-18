@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef CUINTERVAL_TESTS_COMMON_H
-#define CUINTERVAL_TESTS_COMMON_H
+#ifndef CUMCCORMICK_TESTS_COMMON_H
+#define CUMCCORMICK_TESTS_COMMON_H
 
 #include <cstddef>
 #include <cstdio>
@@ -41,4 +41,4 @@ struct cuda_ctx
         }                                                                            \
     } while (0)
 
-#endif // CUINTERVAL_TESTS_COMMON_H
+#endif // CUMCCORMICK_TESTS_COMMON_H
