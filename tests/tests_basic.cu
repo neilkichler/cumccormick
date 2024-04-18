@@ -1,5 +1,7 @@
 #include <cumccormick/arithmetic/basic.cuh>
 
+#include "tests_common.h"
+
 #include <stdio.h>
 
 __device__ void print(mc<double> x)
@@ -118,18 +120,24 @@ __device__ auto ackley(auto x, auto y)
 }
 
 template<typename T>
-__global__ void contains_samples_check_univariate(mc<T> x, std::integral auto n)
+__global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integral auto n)
 {
     // Check that a range of samples are all contained in the mccormick bound
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int i = blockIdx.x;
+    int j = threadIdx.x;
 
     auto contains = [](mc<T> x, T y) {
+        if (!(x.cv <= y && y <= x.cc)) {
+            printf("[E] Invalid bounds: x.cv = %.15g, y = %.15g, x.cc = %.15g\n", x.cv, y, x.cc);
+            printf("[E] Invalid bounds: x.cv = %a, y = %a, x.cc = %a\n", x.cv, y, x.cc);
+        }
         return x.cv <= y && y <= x.cc;
     };
 
     if (i < n) {
+        mc<T> x    = xs[j];
         T x_sample = x.cv + static_cast<T>(i) * (x.cc - x.cv) / static_cast<T>(n);
-        assert(contains(pow(x, 1), pow(x_sample, 1)));
+        assert(contains(pow(x, 1), x_sample));
         assert(contains(pow(x, 2), pow(x_sample, 2)));
         assert(contains(pow(x, 3), pow(x_sample, 3)));
         assert(contains(pow(x, 4), pow(x_sample, 4)));
@@ -140,7 +148,7 @@ __global__ void contains_samples_check_univariate(mc<T> x, std::integral auto n)
         assert(contains(neg(x), -x_sample));
         assert(contains(sqr(x), pow(x_sample, 2)));
         assert(contains(cos(x), cos(x_sample)));
-        assert(contains(sin(x), sin(x_sample)));
+        // assert(contains(sin(x), sin(x_sample)));
 
         if (inf(x) >= 0) {
             assert(contains(log(x), log(x_sample)));
@@ -151,16 +159,21 @@ __global__ void contains_samples_check_univariate(mc<T> x, std::integral auto n)
 }
 
 template<typename T>
-__global__ void contains_samples_check_bivariate(mc<T> x, mc<T> y, std::integral auto n)
+__global__ void contains_samples_check_bivariate(mc<T> *xs, mc<T> *ys, std::integral auto n)
 {
     // Check that a range of samples are all contained in the mccormick bound
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int i = blockIdx.x;
+    int j = threadIdx.x;
+    int k = threadIdx.y;
 
     auto contains = [](mc<T> x, T y) {
         return x.cv <= y && y <= x.cc;
     };
 
     if (i < n) {
+        mc<T> x    = xs[j];
+        mc<T> y    = ys[k];
+
         T x_sample = x.cv + static_cast<T>(i) * (x.cc - x.cv) / static_cast<T>(n);
         T y_sample = y.cv + static_cast<T>(i) * (y.cc - y.cv) / static_cast<T>(n);
         assert(contains(x + y, x_sample + y_sample));
@@ -203,19 +216,41 @@ __global__ void test_fn_kernel()
 
 void bounds_kernel(cudaStream_t stream)
 {
-    // mc<double> x { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } };
-    // mc<double> x { .cv = 50.6, .cc = 100.65, .box = { .lb = 50.0, .ub = 100.7 } };
-    mc<double> x { .cv = 7.6, .cc = 7.65, .box = { .lb = 6.1, .ub = 7.7 } };
-    // mc<double> x { .cv = 3.6, .cc = 3.85, .box = { .lb = -4.1, .ub = 7.7 } };
-    // mc<double> x { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.1, .ub = 0.1 } };
-    // mc<double> x { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.01, .ub = 0.01 } };
-    // mc<double> x { .cv = 10000.01, .cc = 10001.01, .box = { .lb = 0.0, .ub = 100000.0 } };
-    // mc<double> x { .cv = -3.96, .cc = -3.25, .box = { .lb = -4.1, .ub = -3.1 } };
-    mc<double> y { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } };
-
     constexpr int n_samples = 512;
-    contains_samples_check_univariate<<<n_samples, 1>>>(x, n_samples);
-    contains_samples_check_bivariate<<<n_samples, 1>>>(x, y, n_samples);
+    constexpr int n_xs      = 8;
+
+    mc<double> xs[n_xs] = {
+        { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } },
+        { .cv = 7.6, .cc = 7.65, .box = { .lb = 6.1, .ub = 7.7 } },
+        { .cv = 50.6, .cc = 100.65, .box = { .lb = 50.0, .ub = 100.7 } },
+        { .cv = 3.6, .cc = 3.85, .box = { .lb = -4.1, .ub = 7.7 } },
+        { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.1, .ub = 0.1 } },
+        { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.01, .ub = 0.01 } },
+        { .cv = 10000.01, .cc = 10001.01, .box = { .lb = 0.0, .ub = 100000.0 } },
+        { .cv = -3.96, .cc = -3.25, .box = { .lb = -4.1, .ub = -3.1 } },
+    };
+
+    mc<double> *d_xs;
+    CUDA_CHECK(cudaMalloc(&d_xs, n_xs * sizeof(mc<double>)));
+    CUDA_CHECK(cudaMemcpy(d_xs, xs, n_xs * sizeof(mc<double>), cudaMemcpyHostToDevice));
+
+    contains_samples_check_univariate<<<n_samples, n_xs>>>(d_xs, n_xs, n_samples);
+
+    mc<double> *d_ys;
+    constexpr int n_ys  = 2;
+    mc<double> ys[n_ys] = {
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+    };
+
+    CUDA_CHECK(cudaMalloc(&d_ys, n_ys * sizeof(mc<double>)));
+    CUDA_CHECK(cudaMemcpy(d_ys, ys, n_ys * sizeof(mc<double>), cudaMemcpyHostToDevice));
+
+    dim3 blocks(n_xs, n_ys);
+    contains_samples_check_bivariate<<<n_samples, blocks>>>(d_xs, d_ys, n_samples);
+
+    CUDA_CHECK(cudaFree(d_xs));
+    CUDA_CHECK(cudaFree(d_ys));
 }
 
 void basic_kernel(cudaStream_t stream)

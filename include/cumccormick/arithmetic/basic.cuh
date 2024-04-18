@@ -486,7 +486,7 @@ template<std::floating_point T>
 struct solver_options
 {
     int maxiter { 50 };
-    T tolerance { 1e-8 };
+    T tolerance { 1e-10 };
     T epsilon { 1e-10 };
 };
 
@@ -624,13 +624,12 @@ inline __device__ mc<T> cos(mc<T> x)
             //                 (x - a) * sin(x) + cos(x) - cos(a)
             //                 Make use of it for solving for the roots directly?
 
-            // NOTE: Currently we assume that the root is always x=a. Make sure that this
-            //       is always correct. It allows us to skip the rootfind.
-            T xj = xm;
+            // NOTE: Maybe we can skip the rootfind if xj = xm?
+            // T xj = xm;
 
-            // auto f  = [xm](T x) { return (x - xm) * sin(x) + cos(x) - cos(xm); };
-            // auto df = [xm](T x) { return (x - xm) * cos(x); };
-            // T xj = root_newton(f, df, x0, lb, ub);
+            auto f  = [xm](T x) { return (x - xm) * sin(x) + cos(x) - cos(xm); };
+            auto df = [xm](T x) { return (x - xm) * cos(x); };
+            T xj    = root_newton(f, df, x0, lb, ub);
 
             if (left && x <= xj || !left && x >= xj) {
                 return next_after(cos(x), -1.0);
