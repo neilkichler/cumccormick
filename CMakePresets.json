@@ -29,58 +29,65 @@
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++"
        }
-     },
-     {
+    },
+    {
       "name": "clang",
       "hidden": true,
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++"
        }
-     },
-     {
+    },
+    {
       "name": "msvc",
       "hidden": true,
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl"
        }
-     },
-     {
+    },
+    {
         "name": "sanitizer-address",
         "hidden": true,
         "cacheVariables": {
             "CMAKE_CXX_FLAGS": "-fsanitize=address"
         }
-     },
-     {
+    },
+    {
         "name": "sanitizer-leak",
         "hidden": true,
         "cacheVariables": {
             "CMAKE_CXX_FLAGS": "-fsanitize=leak"
         }
-     },
-     {
+    },
+    {
         "name": "sanitizer-memory",
         "hidden": true,
         "cacheVariables": {
             "CMAKE_CXX_FLAGS": "-fsanitize=memory"
         }
-     },
-     {
+    },
+    {
         "name": "sanitizer-thread",
         "hidden": true,
         "cacheVariables": {
             "CMAKE_CXX_FLAGS": "-fsanitize=thread"
         }
-     },
-     {
+    },
+    {
         "name": "sanitizer-undefined",
         "hidden": true,
         "cacheVariables": {
             "CMAKE_CXX_FLAGS": "-fsanitize=undefined"
         }
-     },
+    },
+    {
+        "name": "coverage",
+        "hidden": true,
+        "cacheVariables": {
+            "ENABLE_TEST_COVERAGE": "ON"
+        }
+    },
     {
       "name": "debug",
       "inherits": ["common"],
@@ -118,6 +125,10 @@
      {
        "name": "linux-gcc-debug-sanitizer-ub",
        "inherits": ["linux-gcc-debug", "sanitizer-undefined"]
+     },
+     {
+       "name": "linux-gcc-debug-sanitizer-ub-coverage",
+       "inherits": ["linux-gcc-debug-sanitizer-ub", "coverage"]
      },
      {
        "name": "linux-gcc-debug-sanitizer-thread",
