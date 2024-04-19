@@ -423,9 +423,21 @@ inline __device__ mc<T> operator+(T a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> operator+(std::integral auto a, mc<T> b)
+{
+    return add(static_cast<T>(a), b);
+}
+
+template<typename T>
 inline __device__ mc<T> operator+(mc<T> a, T b)
 {
     return add(b, a);
+}
+
+template<typename T>
+inline __device__ mc<T> operator+(mc<T> a, std::integral auto b)
+{
+    return add(static_cast<T>(b), a);
 }
 
 template<typename T>
@@ -447,9 +459,21 @@ inline __device__ mc<T> operator-(T a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> operator-(std::integral auto a, mc<T> b)
+{
+    return sub(static_cast<T>(a), b);
+}
+
+template<typename T>
 inline __device__ mc<T> operator-(mc<T> a, T b)
 {
     return sub(a, b);
+}
+
+template<typename T>
+inline __device__ mc<T> operator-(mc<T> a, std::integral auto b)
+{
+    return sub(a, static_cast<T>(b));
 }
 
 template<typename T>
@@ -459,9 +483,21 @@ inline __device__ mc<T> operator*(T a, mc<T> b)
 }
 
 template<typename T>
+inline __device__ mc<T> operator*(std::integral auto a, mc<T> b)
+{
+    return mul(static_cast<T>(a), b);
+}
+
+template<typename T>
 inline __device__ mc<T> operator*(mc<T> a, T b)
 {
     return mul(b, a);
+}
+
+template<typename T>
+inline __device__ mc<T> operator*(mc<T> a, std::integral auto b)
+{
+    return mul(static_cast<T>(b), a);
 }
 
 template<typename T>
@@ -474,6 +510,12 @@ template<typename T>
 inline __device__ mc<T> operator/(mc<T> a, T b)
 {
     return div(a, b);
+}
+
+template<typename T>
+inline __device__ mc<T> operator/(mc<T> a, std::integral auto b)
+{
+    return div(a, static_cast<T>(b));
 }
 
 template<typename T>
