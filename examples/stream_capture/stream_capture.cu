@@ -5,6 +5,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+#include "../common.h"
 #include "../tests/tests_common.h"
 
 __device__ auto rosenbrock(auto x, auto y)
@@ -14,22 +15,31 @@ __device__ auto rosenbrock(auto x, auto y)
     return pow(a - x, 2) + b * pow((y - pow(x, 2)), 2);
 }
 
-__global__ void series_of_function_calls()
+__device__ auto model(auto x, auto y)
 {
-    mc<double> x { .cv = -1.96, .cc = 1.25, .box = { .lb = -2.0, .ub = 2.0 } };
-    mc<double> y { .cv = -0.55, .cc = 2.50, .box = { .lb = -1.0, .ub = 3.0 } };
     auto rosen = rosenbrock(x, y);
-    auto z = cos(rosen);
+    auto z     = cos(rosen) - x + x;
+    z          = 10.0 * z;
+    return z;
+}
 
-    printf("Intermediate output is (%.15g, %.15g)\n", y.cv, y.cc);
-    printf("Final output is (%.15g, %.15g)\n", z.cv, z.cc);
+__global__ void example_kernel()
+{
+    mc<double> x { .cv = -1.95, .cc = 1.25, .box = { .lb = -2.0, .ub = 2.0 } };
+    mc<double> y { .cv = -0.55, .cc = 2.50, .box = { .lb = -1.0, .ub = 3.0 } };
+
+    auto res = model(x, y);
+    printf("The Rosenbrock function in McCormick arithmetic, for input:\n");
+    printf("           x: " MCCORMICK_FORMAT ",\n", x.box.lb, x.cv, x.cc, x.box.ub);
+    printf("           y: " MCCORMICK_FORMAT ",\n", y.box.lb, y.cv, y.cc, y.box.ub);
+    printf("evaluates to: " MCCORMICK_FORMAT ".\n", res.box.lb, res.cv, res.cc, res.box.ub);
 }
 
 void streaming_example(cuda_ctx ctx)
 {
     cudaGraph_t graph;
     CUDA_CHECK(cudaStreamBeginCapture(ctx.streams[0], cudaStreamCaptureModeGlobal));
-    series_of_function_calls<<<1, 1, 0, ctx.streams[0]>>>();
+    example_kernel<<<1, 1, 0, ctx.streams[0]>>>();
     CUDA_CHECK(cudaStreamEndCapture(ctx.streams[0], &graph));
 
     cudaGraphNode_t *nodes = nullptr;

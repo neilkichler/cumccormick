@@ -1,0 +1,6 @@
+#ifndef CUMCCORMICK_EXAMPLES_COMMON_H
+#define CUMCCORMICK_EXAMPLES_COMMON_H
+
+#define MCCORMICK_FORMAT "[lb: %g (cv: %g, cc: %g), ub: %g]"
+
+#endif // CUMCCORMICK_EXAMPLES_COMMON_H
