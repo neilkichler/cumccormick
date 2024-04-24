@@ -532,40 +532,56 @@ struct solver_options
     T epsilon { 1e-10 };
 };
 
-// template<typename T>
-// inline __device__ interval<T> golden_section(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
-// {
-//     auto [maxiter, tolerance, epsilon] = options;
-//     // TODO: implement
-// }
-
 template<typename T>
-inline __device__ T root_newton(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
+inline __device__ T root_safe_newton(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
 {
     // Version of Newton's method with bounded range for x in [lb, ub].
     auto [maxiter, tolerance, epsilon] = options;
 
-    T x = mid(x0, lb, ub);
+    // TODO: in the case that f(lb) and f(ub) have same sign, e.g. x^2, we could use
+    //       extreme point finding method to find the root.
+    assert(f(lb) * f(ub) <= 0.0 && "sign change must be different for f(lb) and f(ub)");
+
+    T x       = mid(x0, lb, ub);
+    T delta_x = intrinsic::pos_inf<T>();
 
     for (int i = 0; i < maxiter; i++) {
         T y    = f(x);
         T dydx = df(x);
 
-        if (abs(dydx) < epsilon) {
-            // perform golden section search if dydx is close to zero.
-            assert(false && "dydx is too close to zero");
+        bool too_slow_progress = abs(2.0 * y) > abs(delta_x * dydx);
+
+        T x_new;
+        if (abs(dydx) < epsilon || too_slow_progress) {
+            // perform bisection (twice) if dydx is close to zero.
+            auto f_lb = f(lb);
+            auto c    = lb + 0.5 * (ub - lb); // is eqv. to (lb + ub) / 2.0 with potentially better roundoff.
+            auto f_c  = f(c);
+
+            if (f_lb * f_c > 0.0) { // f_lb and f_c have same signs
+                lb = c;
+            } else {                // f_ub and f_c have same signs
+                ub = c;
+            }
+
+            x_new = lb + 0.5 * (ub - lb);
+        } else {
+            // perform update with bounded newton step
+            T newton_step = y / dydx;
+            x_new         = x - newton_step;
+            x_new         = mid(x_new, lb, ub);
         }
 
-        T newton_step = y / dydx;
-        if ((x == lb && newton_step > 0.0) || (x == ub && newton_step < 0.0)) {
-            return x;
-        }
-
-        T x_new = x - y / dydx;
-        x_new   = mid(x_new, lb, ub);
-
-        if (abs(x_new - x) <= tolerance) {
+        delta_x = abs(x_new - x);
+        if (delta_x <= tolerance) {
             return x_new;
+        }
+
+        if (signbit(f(lb)) == signbit(f(x_new))) {
+            // lb and x_new have same signs
+            lb = x_new;
+        } else {
+            ub = x_new;
         }
 
         x = x_new;
@@ -671,7 +687,7 @@ inline __device__ mc<T> cos(mc<T> x)
 
             auto f  = [xm](T x) { return (x - xm) * sin(x) + cos(x) - cos(xm); };
             auto df = [xm](T x) { return (x - xm) * cos(x); };
-            T xj    = root_newton(f, df, x0, lb, ub);
+            T xj    = root_safe_newton(f, df, x0, lb, ub);
 
             if (left && x <= xj || !left && x >= xj) {
                 return next_after(cos(x), -1.0);

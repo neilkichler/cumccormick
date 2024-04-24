@@ -15,6 +15,8 @@ add_executable(tests
     tests_basic.cpp
     tests_basic.cu
     tests_basic.h
+    tests_root.cu
+    tests_root.h
 )
 
 # Use C++20 in the tests
