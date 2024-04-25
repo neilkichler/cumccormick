@@ -9,6 +9,8 @@
 
 #include "mccormick.h"
 
+#include <stdio.h>
+
 template<typename T>
 using mc = mccormick<T>;
 
@@ -528,52 +530,45 @@ template<std::floating_point T>
 struct solver_options
 {
     int maxiter { 50 };
-    T tolerance { 1e-10 };
-    T epsilon { 1e-10 };
+    T atol { 1e-10 };
+    T rtol { 0.0 };
+};
+
+template<std::floating_point T>
+struct root_solver_state
+{
+    T x;
+    T lb;
+    T ub;
+    T y;
 };
 
 template<typename T>
-inline __device__ T root_safe_newton(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
+inline __device__ T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> options = {})
 {
-    // Version of Newton's method with bounded range for x in [lb, ub].
-    auto [maxiter, tolerance, epsilon] = options;
-
-    // TODO: in the case that f(lb) and f(ub) have same sign, e.g. x^2, we could use
-    //       extreme point finding method to find the root.
-    assert(f(lb) * f(ub) <= 0.0 && "sign change must be different for f(lb) and f(ub)");
+    assert(f(lb) * f(ub) <= 0.0 && "sign must be different for f(lb) and f(ub)");
 
     T x       = mid(x0, lb, ub);
     T delta_x = intrinsic::pos_inf<T>();
 
-    for (int i = 0; i < maxiter; i++) {
-        T y    = f(x);
-        T dydx = df(x);
+    auto terminate = [options](auto f_error, auto x, auto x_prev, std::integral auto i) {
+        auto [maxiter, atol, rtol] = options;
+        auto scaled_tol            = atol + rtol * abs(x); // alternative: max(atol, rtol * abs(x));
+        bool x_small               = abs(x - x_prev) < scaled_tol;
+        bool f_small               = abs(f_error) < atol;
+        return (x_small && f_small) || i >= maxiter;
+    };
 
-        bool too_slow_progress = abs(2.0 * y) > abs(delta_x * dydx);
+    for (int i = 0;; i++) {
+        auto state                = root_solver_state<T> { x, lb, ub };
+        auto [x_new, lb_, ub_, y] = step(state, delta_x);
+        lb                        = lb_;
+        ub                        = ub_;
+        x_new                     = mid(x_new, lb, ub);
 
-        T x_new;
-        if (abs(dydx) < epsilon || too_slow_progress) {
-            // perform bisection (twice) if dydx is close to zero.
-            auto f_lb = f(lb);
-            auto c    = lb + 0.5 * (ub - lb); // is eqv. to (lb + ub) / 2.0 with potentially better roundoff.
-            auto f_c  = f(c);
+        printf("[%.3d] f(x) = %+e, x = %+e, delta_x = %+e, lb = %+.3e, ub = %+.3e\n", i, y, x, delta_x, lb, ub);
 
-            if (f_lb * f_c > 0.0) { // f_lb and f_c have same signs
-                lb = c;
-            } else {                // f_ub and f_c have same signs
-                ub = c;
-            }
-
-            x_new = lb + 0.5 * (ub - lb);
-        } else {
-            // perform update with bounded newton step
-            T newton_step = y / dydx;
-            x_new         = x - newton_step;
-            x_new         = mid(x_new, lb, ub);
-        }
-
-        delta_x = abs(x_new - x);
-        if (delta_x <= tolerance) {
+        if (terminate(y, x_new, x, i)) {
             return x_new;
         }
 
@@ -584,11 +579,153 @@ inline __device__ T root_safe_newton(auto &&f, auto &&df, T x0, T lb, T ub, solv
             ub = x_new;
         }
 
-        x = x_new;
+        delta_x = abs(x_new - x);
+        x       = x_new;
+    }
+    return x;
+}
+
+template<std::floating_point T>
+inline __device__ auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&step_fn, T epsilon=1e-30)
+{
+    auto [x, lb, ub, _] = state;
+
+    T y    = f(x);
+    T dydx = df(x);
+
+    bool too_slow_progress = abs(2.0 * y) > abs(delta_x * dydx);
+
+    T x_new;
+    if (abs(dydx) < epsilon || too_slow_progress) {
+        // perform bisection (twice) if dydx is close to zero.
+        auto f_lb = f(lb);
+        auto c    = lb + 0.5 * (ub - lb); // is eqv. to (lb + ub) / 2.0 with potentially better roundoff.
+        auto f_c  = f(c);
+
+        if (f_lb * f_c > 0.0) { // f_lb and f_c have same signs
+            lb = c;
+        } else { // f_ub and f_c have same signs
+            ub = c;
+        }
+
+        x_new = lb + 0.5 * (ub - lb);
+    } else {
+        // perform update with bounded newton step
+        T step = step_fn(x, y);
+        x_new  = x - step;
+        x_new  = mid(x_new, lb, ub);
     }
 
-    // did not reach given tolerance in maxiter
-    return x;
+    return root_solver_state { x_new, lb, ub, y };
+}
+
+inline __device__ auto newton_step(auto x, auto y, auto &&df)
+{
+    return y / df(x);
+}
+
+template<typename T>
+inline __device__ auto newton_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df)
+{
+    auto [x, lb, ub, _] = state;
+    T y                 = f(x);
+    x                   = x - newton_step(x, y, df);
+    return root_solver_state { x, lb, ub, y };
+}
+
+inline __device__ auto halley_step(auto x, auto y, auto &&df, auto &&ddf)
+{
+    return (2.0 * y * df(x)) / (2.0 * pow(df(x), 2) - y * ddf(x));
+}
+
+template<typename T>
+inline __device__ auto halley_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf)
+{
+    auto [x, lb, ub, _] = state;
+    T y                 = f(x);
+    x                   = x - halley_step(x, y, df, ddf);
+    return root_solver_state { x, lb, ub, y };
+}
+
+inline __device__ auto householder_step(auto x, auto y, auto &&df, auto &&ddf, auto &&dddf)
+{
+    auto dy   = df(x);
+    auto ddy  = ddf(x);
+    auto dddy = dddf(x);
+    return (6 * y * pow(dy, 2) - 3 * pow(y, 2) * ddy)
+        / (6 * pow(dy, 3) - 6 * y * dy * ddy + pow(y, 2) * dddy);
+}
+
+template<typename T>
+inline __device__ auto householder_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
+{
+    auto [x, lb, ub, _] = state;
+    T y                 = f(x);
+    x                   = x - householder_step(x, y, df, ddf, dddf);
+    return root_solver_state { x, lb, ub, y };
+}
+
+template<std::floating_point T>
+inline __device__ auto newton_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df)
+{
+    auto step_fn = [df](auto x, auto y) { return newton_step(x, y, df); };
+    return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
+}
+
+template<std::floating_point T>
+inline __device__ auto halley_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf)
+{
+    auto step_fn = [df, ddf](auto x, auto y) { return halley_step(x, y, df, ddf); };
+    return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
+}
+
+template<std::floating_point T>
+inline __device__ auto householder_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
+{
+    auto step_fn = [df, ddf, dddf](auto x, auto y) { return householder_step(x, y, df, ddf, dddf); };
+    return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
+}
+
+template<typename T>
+inline __device__ T root_newton(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
+{
+    auto step_fn = [f, df](auto x, auto delta_x) { return newton_step(x, delta_x, f, df); };
+    return root(f, step_fn, x0, lb, ub, options);
+}
+
+template<typename T>
+inline __device__ T root_newton_bisection(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
+{
+    auto step_fn = [f, df](auto x, auto delta_x) { return newton_bisection_step(x, delta_x, f, df); };
+    return root(f, step_fn, x0, lb, ub, options);
+}
+
+template<typename T>
+inline __device__ T root_halley(auto &&f, auto &&df, auto &&ddf, T x0, T lb, T ub, solver_options<T> options = {})
+{
+    auto step_fn = [f, df, ddf](auto x, auto delta_x) { return halley_step(x, delta_x, f, df, ddf); };
+    return root(f, step_fn, x0, lb, ub, options);
+}
+
+template<typename T>
+inline __device__ T root_halley_bisection(auto &&f, auto &&df, auto &&ddf, T x0, T lb, T ub, solver_options<T> options = {})
+{
+    auto step_fn = [f, df, ddf](auto x, auto delta_x) { return halley_bisection_step(x, delta_x, f, df, ddf); };
+    return root(f, step_fn, x0, lb, ub, options);
+}
+
+template<typename T>
+inline __device__ T root_householder(auto &&f, auto &&df, auto &&ddf, auto &&dddf, T x0, T lb, T ub, solver_options<T> options = {})
+{
+    auto step_fn = [f, df, ddf, dddf](auto x, auto delta_x) { return householder_step(x, delta_x, f, df, ddf, dddf); };
+    return root(f, step_fn, x0, lb, ub, options);
+}
+
+template<typename T>
+inline __device__ T root_householder_bisection(auto &&f, auto &&df, auto &&ddf, auto &&dddf, T x0, T lb, T ub, solver_options<T> options = {})
+{
+    auto step_fn = [f, df, ddf, dddf](auto x, auto delta_x) { return householder_bisection_step(x, delta_x, f, df, ddf, dddf); };
+    return root(f, step_fn, x0, lb, ub, options);
 }
 
 template<typename T>
@@ -687,7 +824,7 @@ inline __device__ mc<T> cos(mc<T> x)
 
             auto f  = [xm](T x) { return (x - xm) * sin(x) + cos(x) - cos(xm); };
             auto df = [xm](T x) { return (x - xm) * cos(x); };
-            T xj    = root_safe_newton(f, df, x0, lb, ub);
+            T xj    = root_newton_bisection(f, df, x0, lb, ub);
 
             if (left && x <= xj || !left && x >= xj) {
                 return next_after(cos(x), -1.0);
