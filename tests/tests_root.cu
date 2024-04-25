@@ -12,8 +12,11 @@ __global__ void root_kernel()
     auto check     = [tolerance](auto z, auto z_true) {
         auto lb = z_true - tolerance;
         auto ub = z_true + tolerance;
-        printf("root x=%.15g is inside [%.15g, %.15g]\n", z, lb, ub);
-        assert(z >= lb && z <= ub);
+        bool check = (z >= lb && z <= ub);
+        if (!check)
+            printf("[E] root x=%.15g must be inside [%.15g, %.15g]\n", z, lb, ub);
+
+        assert(check);
     };
     {
         auto f    = [](double x) { return cos(x); };
@@ -23,17 +26,14 @@ __global__ void root_kernel()
 
         double z_true = 3.0 * (std::numbers::pi / 2.0);
         {
-            printf("Newton Bisection\n");
             double z = root_newton_bisection(f, df, 4.0, 4.0, 2.0 * std::numbers::pi);
             check(z, z_true);
         }
         {
-            printf("Halley bisection\n");
             double z = root_halley_bisection(f, df, ddf, 4.0, 4.0, 2.0 * std::numbers::pi);
             check(z, z_true);
         }
         {
-            printf("Householder bisection\n");
             double z = root_householder_bisection(f, df, ddf, dddf, 4.0, 4.0, 2.0 * std::numbers::pi);
             check(z, z_true);
         }
@@ -46,27 +46,22 @@ __global__ void root_kernel()
 
         double z_true = 1.75;
         {
-            printf("Halley\n");
             double z = root_halley(f, df, ddf, 1.5, 1.0, 2.0, opts);
             check(z, z_true);
         }
         {
-            printf("Householder\n");
             double z = root_householder(f, df, ddf, dddf, 1.5, 1.0, 2.0, opts);
             check(z, z_true);
         }
         {
-            printf("Newton bisection\n");
             double z = root_newton_bisection(f, df, 1.5, 1.0, 2.0, opts);
             check(z, z_true);
         }
         {
-            printf("Halley bisection\n");
             double z = root_halley_bisection(f, df, ddf, 1.5, 1.0, 2.0, opts);
             check(z, z_true);
         }
         {
-            printf("Householder bisection\n");
             double z = root_householder_bisection(f, df, ddf, dddf, 1.5, 1.0, 2.0, opts);
             check(z, z_true);
         }
@@ -79,17 +74,14 @@ __global__ void root_kernel()
 
         double z_true = 1.0;
         {
-            printf("Newton bisection\n");
             double z = root_newton_bisection(f, df, 7.5, 0.25, 10.0, opts);
             check(z, z_true);
         }
         {
-            printf("Halley bisection\n");
             double z = root_halley_bisection(f, df, ddf, 7.5, 0.25, 10.0, opts);
             check(z, z_true);
         }
         {
-            printf("Householder bisection\n");
             double z = root_householder_bisection(f, df, ddf, dddf, 7.5, 0.25, 10.0, opts);
             check(z, z_true);
         }
@@ -102,17 +94,14 @@ __global__ void root_kernel()
 
         double z_true = 1.0;
         {
-            printf("Newton bisection\n");
             double z = root_newton_bisection(f, df, 0.0, -1.0, 1.0, opts);
             check(z, z_true);
         }
         {
-            printf("Halley bisection\n");
             double z = root_halley_bisection(f, df, ddf, 0.0, -1.0, 1.0, opts);
             check(z, z_true);
         }
         {
-            printf("Householder bisection\n");
             double z = root_householder_bisection(f, df, ddf, dddf, 0.0, -1.0, 1.0, opts);
             check(z, z_true);
         }

@@ -9,8 +9,6 @@
 
 #include "mccormick.h"
 
-#include <stdio.h>
-
 template<typename T>
 using mc = mccormick<T>;
 
@@ -565,8 +563,6 @@ inline __device__ T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options
         lb                        = lb_;
         ub                        = ub_;
         x_new                     = mid(x_new, lb, ub);
-
-        printf("[%.3d] f(x) = %+e, x = %+e, delta_x = %+e, lb = %+.3e, ub = %+.3e\n", i, y, x, delta_x, lb, ub);
 
         if (terminate(y, x_new, x, i)) {
             return x_new;
