@@ -13,9 +13,9 @@ target_include_directories(
                       $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
-# C++17 is required for all users of the library
-target_compile_features(cumccormick PUBLIC cxx_std_17)
-target_compile_features(cumccormick PUBLIC cuda_std_17)
+# C++20 is required for all users of the library
+target_compile_features(cumccormick PUBLIC cxx_std_20)
+target_compile_features(cumccormick PUBLIC cuda_std_20)
 
 source_group(
     TREE "${INCLUDE_PATH}"
