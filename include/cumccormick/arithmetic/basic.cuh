@@ -583,7 +583,7 @@ inline __device__ T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options
 }
 
 template<std::floating_point T>
-inline __device__ auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&step_fn, T epsilon=1e-30)
+inline __device__ auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&step_fn, T epsilon = 1e-30)
 {
     auto [x, lb, ub, _] = state;
 
