@@ -193,15 +193,56 @@ void streaming_example(cuda_ctx ctx)
     std::vector<mc<T>> res(n_xs);
     CUDA_CHECK(cudaMemcpy(res.data(), d_res, n_xs * sizeof(mc<T>), cudaMemcpyDeviceToHost));
 
-    CUDA_CHECK(cudaFree(d_xs));
-
-    printf("Results: \n");
+    printf("Results (1st Capture): \n");
     for (auto r : res) {
         printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
     }
 
+    // reset result buffers
+    res.clear();
+    res.resize(n_xs);
+    CUDA_CHECK(cudaMemset(d_res, 0, n_xs * sizeof(mc<T>)));
+
+    CUDA_CHECK(cudaGraphDebugDotPrint(graph, "stream_capture_1.dot", 0));
+
+
+    //
+    // Second capture
+    //
+
+    // we can reuse the same graph for different inputs
+    xs[0] = { .cv = -4.96, .cc = 4.25, .box = { .lb = -8.0, .ub = 8.0 } };
+
+    CUDA_CHECK(cudaMemcpy(d_xs, xs.data(), xs_size, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_ys, ys.data(), ys_size, cudaMemcpyHostToDevice));
+
+    
+    CUDA_CHECK(cudaStreamBeginCapture(ctx.streams[0], cudaStreamCaptureModeGlobal));
+    multiple_kernels_model(ctx, d_xs, d_ys, d_res, n_xs);
+    CUDA_CHECK(cudaStreamEndCapture(ctx.streams[0], &graph));
+
+    cudaGraphExecUpdateResultInfo update_info;
+    if (cudaGraphExecUpdate(graph_exe, graph, &update_info) != cudaSuccess) {
+        // graph update failed -> create a new one
+        printf("Failed to update the graph, creating a new one.\n");
+        CUDA_CHECK(cudaGraphExecDestroy(graph_exe));
+        CUDA_CHECK(cudaGraphInstantiate(&graph_exe, graph, nullptr, nullptr, 0));
+    }
+    CUDA_CHECK(cudaGraphLaunch(graph_exe, g_stream));
+    CUDA_CHECK(cudaStreamSynchronize(g_stream));
+    CUDA_CHECK(cudaMemcpy(res.data(), d_res, n_xs * sizeof(mc<T>), cudaMemcpyDeviceToHost));
+
+    printf("Results (2nd Capture): \n");
+    for (auto r : res) {
+        printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    }
+
+    CUDA_CHECK(cudaGraphDebugDotPrint(graph, "stream_capture_2.dot", 0));
+
     CUDA_CHECK(cudaGraphExecDestroy(graph_exe));
     CUDA_CHECK(cudaGraphDestroy(graph));
+
+    CUDA_CHECK(cudaFree(d_xs));
 }
 
 int main()
