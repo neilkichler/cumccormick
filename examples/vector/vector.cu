@@ -91,9 +91,16 @@ void user_kernel_multiple_inputs(cuda_ctx ctx)
     std::vector<mc<double>> ys {
         { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
         { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
     };
 
-#if 1
+#if 0
     auto user_kernel = lambda(auto x, auto y) {
         return pow(1.0 - x, 2) + 100.0 * pow((y - pow(x, 2)), 2);
     };

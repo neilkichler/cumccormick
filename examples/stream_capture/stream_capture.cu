@@ -1,6 +1,7 @@
 #include <cumccormick/arithmetic/basic.cuh>
 
-#include <stdio.h>
+#include <cstdio>
+#include <vector>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -23,35 +24,181 @@ __device__ auto model(auto x, auto y)
     return z;
 }
 
-__global__ void example_kernel()
+__global__ void k_cos(auto *x, auto *res, int n)
 {
-    mc<double> x { .cv = -1.95, .cc = 1.25, .box = { .lb = -2.0, .ub = 2.0 } };
-    mc<double> y { .cv = -0.55, .cc = 2.50, .box = { .lb = -1.0, .ub = 3.0 } };
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i < n) {
+        res[i] = cos(x[i]);
+    }
+}
 
-    auto res = model(x, y);
-    printf("The Rosenbrock function in McCormick arithmetic, for input:\n");
-    printf("           x: " MCCORMICK_FORMAT ",\n", x.box.lb, x.cv, x.cc, x.box.ub);
-    printf("           y: " MCCORMICK_FORMAT ",\n", y.box.lb, y.cv, y.cc, y.box.ub);
-    printf("evaluates to: " MCCORMICK_FORMAT ".\n", res.box.lb, res.cv, res.cc, res.box.ub);
+__global__ void k_exp(auto *x, auto *res, int n)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i < n) {
+        res[i] = exp(x[i]);
+    }
+}
+
+__global__ void k_pow(auto *x, int pow_n, auto *res, int n)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i < n) {
+        res[i] = pow(x[i], pow_n);
+    }
+}
+
+__global__ void k_sub(auto x_const, auto *y, auto *res, int n)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i < n) {
+        res[i] = sub(x_const, y[i]);
+    }
+}
+
+__global__ void k_sub(auto *x, auto *y, auto *res, int n)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i < n) {
+        res[i] = sub(x[i], y[i]);
+    }
+}
+
+__global__ void k_add(auto *x, auto *y, auto *res, int n)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i < n) {
+        res[i] = add(x[i], y[i]);
+    }
+}
+
+template<typename T>
+__global__ void k_mul(T x_const, mc<T> *y, mc<T> *res, int n)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i < n) {
+        res[i] = mul(x_const, y[i]);
+    }
+}
+
+template<typename T>
+void multiple_kernels_model(cuda_ctx &ctx, mc<T> *d_xs, mc<T> *d_ys, mc<T> *d_res, int n)
+{
+    T a = 1.0;
+    T b = 100.0;
+
+    auto s = ctx.streams[0];
+
+    // DAG manual serialization of model (see above).
+
+    // v0 = x
+    auto v0 = d_xs;
+    // v1 = y
+    auto v1 = d_ys;
+    // v2 = a - v0
+    k_sub<<<128, 1, 0, s>>>(a, v0, d_res, n);
+    auto v2 = d_res;
+    // v3 = pow(v2, 2)
+    k_pow<<<128, 1, 0, s>>>(v2, 2, d_res, n);
+    auto v3 = d_res;
+    // v4 = pow(v0, 2)
+    k_pow<<<128, 1, 0, s>>>(v0, 2, d_res, n);
+    auto v4 = d_res;
+    // v5 = v1 - v4
+    k_sub<<<128, 1, 0, s>>>(v1, v4, d_res, n);
+    auto v5 = d_res;
+    // v6 = pow(v5, 2)
+    k_pow<<<128, 1, 0, s>>>(v5, 2, d_res, n);
+    auto v6 = d_res;
+    // v7 = b * v6
+    k_mul<<<128, 1, 0, s>>>(b, v6, d_res, n);
+    auto v7 = d_res;
+    // v8 = v3 + v7
+    k_add<<<128, 1, 0, s>>>(v3, v7, d_res, n);
+    auto v8 = d_res;
+    // v9 = cos(v8);
+    k_cos<<<128, 1, 0, s>>>(v8, d_res, n);
+    auto v9 = d_res;
+    // v10 = v9 - v0
+    k_sub<<<128, 1, 0, s>>>(v9, v0, d_res, n);
+    auto v10 = d_res;
+    // v11 = v10 + v0
+    k_add<<<128, 1, 0, s>>>(v10, v0, d_res, n);
+    auto v11 = d_res;
+    // v12 = 10.0 * v10
+    k_mul<<<128, 1, 0, s>>>(10.0, v10, d_res, n);
+    auto v12 = d_res;
 }
 
 void streaming_example(cuda_ctx ctx)
 {
+    std::vector<mc<double>> xs {
+        { .cv = -1.96, .cc = 1.25, .box = { .lb = -2.0, .ub = 2.0 } },
+        { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } },
+        { .cv = 7.6, .cc = 7.65, .box = { .lb = 6.1, .ub = 7.7 } },
+        { .cv = 50.6, .cc = 100.65, .box = { .lb = 50.0, .ub = 100.7 } },
+        { .cv = 3.6, .cc = 3.85, .box = { .lb = -4.1, .ub = 7.7 } },
+        { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.1, .ub = 0.1 } },
+        { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.01, .ub = 0.01 } },
+        { .cv = 10000.01, .cc = 10001.01, .box = { .lb = 0.0, .ub = 100000.0 } },
+        { .cv = -3.96, .cc = -3.25, .box = { .lb = -4.1, .ub = -3.1 } },
+    };
+
+    std::vector<mc<double>> ys {
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
+    };
+
+    using T = double;
+    mc<T> *d_xs;
+    mc<T> *d_ys;
+    mc<T> *d_res;
+
+    const int n_xs     = xs.size();
+    const int n_ys     = xs.size();
+    const int xs_size  = n_xs * sizeof(mc<T>);
+    const int ys_size  = n_ys * sizeof(mc<T>);
+    const int res_size = xs_size;
+
+    CUDA_CHECK(cudaMalloc(&d_xs, xs_size));
+    CUDA_CHECK(cudaMalloc(&d_ys, ys_size));
+    CUDA_CHECK(cudaMalloc(&d_res, res_size));
+    CUDA_CHECK(cudaMemcpy(d_xs, xs.data(), xs_size, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_ys, ys.data(), ys_size, cudaMemcpyHostToDevice));
+
     cudaGraph_t graph;
+
     CUDA_CHECK(cudaStreamBeginCapture(ctx.streams[0], cudaStreamCaptureModeGlobal));
-    example_kernel<<<1, 1, 0, ctx.streams[0]>>>();
+    multiple_kernels_model(ctx, d_xs, d_ys, d_res, n_xs);
     CUDA_CHECK(cudaStreamEndCapture(ctx.streams[0], &graph));
 
     cudaGraphNode_t *nodes = nullptr;
     size_t n_nodes;
     CUDA_CHECK(cudaGraphGetNodes(graph, nodes, &n_nodes));
-    printf("Stream capture generated %zu nodes for the graph\n", n_nodes);
+    printf("Stream capture generated %zu nodes for the graph.\n\n", n_nodes);
 
     cudaGraphExec_t graph_exe;
     CUDA_CHECK(cudaGraphInstantiate(&graph_exe, graph, nullptr, nullptr, 0));
     cudaStream_t g_stream = ctx.streams[1];
-    CUDA_CHECK(cudaGraphLaunch(graph_exe, g_stream)); // NOTE: The cuda graph stream can differ from
-    CUDA_CHECK(cudaStreamSynchronize(g_stream));      //       the stream used for recording.
+    CUDA_CHECK(cudaGraphLaunch(graph_exe, g_stream));
+    CUDA_CHECK(cudaStreamSynchronize(g_stream));
+
+    std::vector<mc<T>> res(n_xs);
+    CUDA_CHECK(cudaMemcpy(res.data(), d_res, n_xs * sizeof(mc<T>), cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaFree(d_xs));
+
+    printf("Results: \n");
+    for (auto r : res) {
+        printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    }
 
     CUDA_CHECK(cudaGraphExecDestroy(graph_exe));
     CUDA_CHECK(cudaGraphDestroy(graph));
