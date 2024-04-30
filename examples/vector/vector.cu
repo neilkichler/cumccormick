@@ -67,6 +67,7 @@ void launch(auto &&user_kernel, std::span<mc<T>> xs, std::span<mc<T>> ys)
 
     CUDA_CHECK(cudaFree(d_xs));
     CUDA_CHECK(cudaFree(d_ys));
+    CUDA_CHECK(cudaFree(d_res));
 
     printf("Results: \n");
     for (auto r : res) {
