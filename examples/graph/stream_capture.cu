@@ -243,6 +243,8 @@ void streaming_example(cuda_ctx ctx)
     CUDA_CHECK(cudaGraphDestroy(graph));
 
     CUDA_CHECK(cudaFree(d_xs));
+    CUDA_CHECK(cudaFree(d_ys));
+    CUDA_CHECK(cudaFree(d_res));
 }
 
 int main()
