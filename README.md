@@ -9,7 +9,9 @@ CuMcCormick is a CUDA library for McCormick relaxations.
 ```bash
 git clone https://github.com/neilkichler/cumccormick.git
 cd cumccormick
-cmake --workflow --preset install
+cmake --preset release
+cmake --build build
+cmake --install build
 ```
 
 ## Example
