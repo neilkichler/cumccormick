@@ -809,8 +809,7 @@ inline __device__ mc<T> cos(mc<T> x)
                 xm   = ub;
             }
 
-            // NOTE: We could potentially use the Interval Newton method instead.
-            //       Or a better root finding method: Halley's method or Brent's method.
+            // NOTE: We could potentially use the Interval Newton method in IA instead.
 
             // NOTE: Analytic: We know the taylor/pade approximation of
             //                 (x - a) * sin(x) + cos(x) - cos(a)
@@ -819,9 +818,12 @@ inline __device__ mc<T> cos(mc<T> x)
             // NOTE: Maybe we can skip the rootfind if xj = xm?
             // T xj = xm;
 
-            auto f  = [xm](T x) { return (x - xm) * sin(x) + cos(x) - cos(xm); };
-            auto df = [xm](T x) { return (x - xm) * cos(x); };
-            T xj    = root_newton_bisection(f, df, x0, lb, ub);
+            auto f    = [xm](T x) { return (x - xm) * sin(x) + cos(x) - cos(xm); };
+            auto df   = [xm](T x) { return (x - xm) * cos(x); };
+            auto ddf  = [xm](T x) { return (xm - x) * sin(x) + cos(x); };
+            auto dddf = [xm](T x) { return (xm - x) * cos(x) - 2.0 * sin(x); };
+
+            T xj = root_householder_bisection(f, df, ddf, dddf, x0, lb, ub);
 
             if (left && x <= xj || !left && x >= xj) {
                 return next_after(cos(x), -1.0);
