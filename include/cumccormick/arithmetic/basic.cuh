@@ -899,9 +899,8 @@ inline __device__ mc<T> cos_box(mc<T> x)
 template<typename T>
 inline __device__ mc<T> sin(mc<T> x)
 {
-    using namespace intrinsic;
-
-    return cos(x - std::numbers::pi / static_cast<T>(2.0));
+    constexpr T pi_2_round_up = 0x1.921fb54442d19p+0;
+    return cos(x - pi_2_round_up);
 }
 
 template<typename T>

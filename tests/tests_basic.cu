@@ -126,12 +126,12 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
     int i = blockIdx.x;
     int j = threadIdx.x;
 
-    auto contains = [](mc<T> x, T y) {
-        if (!(x.cv <= y && y <= x.cc)) {
-            printf("[E] Invalid bounds: x.cv = %.15g, y = %.15g, x.cc = %.15g\n", x.cv, y, x.cc);
-            printf("[E] Invalid bounds: x.cv = %a, y = %a, x.cc = %a\n", x.cv, y, x.cc);
+    auto contains = [](mc<T> y_mc, T y) {
+        if (!(y_mc.cv <= y && y <= y_mc.cc)) {
+            printf("[E] Invalid bounds: y.cv = %.15g, y = %.15g, y.cc = %.15g\n", y_mc.cv, y, y_mc.cc);
+            printf("[E] Invalid bounds: y.cv = %a, y = %a, y.cc = %a\n", y_mc.cv, y, y_mc.cc);
         }
-        return x.cv <= y && y <= x.cc;
+        return y_mc.cv <= y && y <= y_mc.cc;
     };
 
     if (i < n) {
@@ -148,8 +148,7 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         assert(contains(neg(x), -x_sample));
         assert(contains(sqr(x), pow(x_sample, 2)));
         assert(contains(cos(x), cos(x_sample)));
-        // assert(contains(sin(x), sin(x_sample)));
-
+        assert(contains(sin(x), sin(x_sample)));
         if (inf(x) >= 0) {
             assert(contains(log(x), log(x_sample)));
             assert(contains(recip(x), pow(x_sample, -1)));
