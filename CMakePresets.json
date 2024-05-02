@@ -277,6 +277,20 @@
           "name": "debug"
         }
       ]
+    },
+    {
+      "name": "release",
+      "description": "Release build without installation",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "release"
+        },
+        {
+          "type": "build",
+          "name": "release"
+        }
+      ]
     }
   ]
 }
