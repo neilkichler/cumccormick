@@ -17,6 +17,8 @@ add_executable(tests
     tests_basic.h
     tests_root.cu
     tests_root.h
+    tests_randomized.cu
+    tests_randomized.h
 )
 
 # Use C++20 in the tests
@@ -36,6 +38,7 @@ target_link_libraries(tests PRIVATE cumccormick ut)
 find_package(CUDAToolkit REQUIRED)
 target_link_libraries(tests PRIVATE CUDA::cuda_driver)
 target_link_libraries(tests PRIVATE CUDA::cudart)
+target_link_libraries(tests PRIVATE CUDA::curand)
 
 # Enable OpenMP
 find_package(OpenMP)
