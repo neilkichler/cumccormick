@@ -70,7 +70,7 @@ __device__ void check_univariate(mc<T> x, T *interior_samples, int n)
         // assert(contains(sin(x), sin(x_sample), x_sample));
         if (inf(x) >= 0) {
             assert(contains(log(x), log(x_sample), x_sample));
-            // assert(contains(recip(x), pow(x_sample, -1), x_sample));
+            assert(contains(recip(x), __drcp_rn(x_sample), x_sample));
             assert(contains(sqrt(x), sqrt(x_sample), x_sample));
         }
     }

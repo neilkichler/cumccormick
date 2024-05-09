@@ -151,7 +151,7 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         assert(contains(sin(x), sin(x_sample)));
         if (inf(x) >= 0) {
             assert(contains(log(x), log(x_sample)));
-            assert(contains(recip(x), pow(x_sample, -1)));
+            assert(contains(recip(x), __drcp_rn(x_sample)));
             assert(contains(sqrt(x), sqrt(x_sample)));
         }
     }
