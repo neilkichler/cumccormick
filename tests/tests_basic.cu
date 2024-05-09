@@ -138,7 +138,7 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         mc<T> x    = xs[j];
         T x_sample = x.cv + static_cast<T>(i) * (x.cc - x.cv) / static_cast<T>(n);
         assert(contains(pow(x, 1), x_sample));
-        assert(contains(pow(x, 2), pow(x_sample, 2)));
+        assert(contains(pow(x, 2), x_sample * x_sample));
         assert(contains(pow(x, 3), pow(x_sample, 3)));
         assert(contains(pow(x, 4), pow(x_sample, 4)));
         assert(contains(pow(x, 5), pow(x_sample, 5)));
@@ -146,7 +146,7 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         assert(contains(exp(x), exp(x_sample)));
         assert(contains(fabs(x), fabs(x_sample)));
         assert(contains(neg(x), -x_sample));
-        assert(contains(sqr(x), pow(x_sample, 2)));
+        assert(contains(sqr(x), x_sample * x_sample));
         assert(contains(cos(x), cos(x_sample)));
         assert(contains(sin(x), sin(x_sample)));
         if (inf(x) >= 0) {

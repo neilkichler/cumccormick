@@ -57,7 +57,7 @@ __device__ void check_univariate(mc<T> x, T *interior_samples, int n)
     for (int i = 0; i < n; i++) {
         T x_sample = interior_samples[i];
         assert(contains(pow(x, 1), x_sample, x_sample));
-        // assert(contains(pow(x, 2), pow(x_sample, 2), x_sample));
+        assert(contains(pow(x, 2), x_sample * x_sample, x_sample));
         assert(contains(pow(x, 3), pow(x_sample, 3), x_sample));
         assert(contains(pow(x, 4), pow(x_sample, 4), x_sample));
         assert(contains(pow(x, 5), pow(x_sample, 5), x_sample));
@@ -65,7 +65,7 @@ __device__ void check_univariate(mc<T> x, T *interior_samples, int n)
         assert(contains(exp(x), exp(x_sample), x_sample));
         assert(contains(fabs(x), fabs(x_sample), x_sample));
         assert(contains(neg(x), -x_sample, x_sample));
-        // assert(contains(sqr(x), pow(x_sample, 2), x_sample));
+        assert(contains(sqr(x), x_sample * x_sample, x_sample));
         // assert(contains(cos(x), cos(x_sample), x_sample));
         // assert(contains(sin(x), sin(x_sample), x_sample));
         if (inf(x) >= 0) {
