@@ -216,7 +216,7 @@ __global__ void test_fn_kernel()
 void bounds_kernel(cudaStream_t stream)
 {
     constexpr int n_samples = 512;
-    constexpr int n_xs      = 8;
+    constexpr int n_xs      = 10;
 
     mc<double> xs[n_xs] = {
         { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } },
@@ -227,6 +227,8 @@ void bounds_kernel(cudaStream_t stream)
         { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.01, .ub = 0.01 } },
         { .cv = 10000.01, .cc = 10001.01, .box = { .lb = 0.0, .ub = 100000.0 } },
         { .cv = -3.96, .cc = -3.25, .box = { .lb = -4.1, .ub = -3.1 } },
+        { .cv = 0.875, .cc = 0.875, .box = { .lb = 0.875, .ub = 0.875 } },
+        { .cv = 0.5, .cc = 0.5, .box = { .lb = 0.5, .ub = 0.5 } },
     };
 
     mc<double> *d_xs;

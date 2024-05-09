@@ -826,7 +826,7 @@ inline __device__ mc<T> cos(mc<T> x)
             T xj = root_householder_bisection(f, df, ddf, dddf, x0, lb, ub);
 
             if (left && x <= xj || !left && x >= xj) {
-                return next_after(cos(x), -1.0);
+                return next_after(next_after(cos(x), -1.0), -1.0);
             } else {
                 return secant_of_concave(x, xj, xm, [](T x) { return cos(x); });
             }
@@ -841,7 +841,7 @@ inline __device__ mc<T> cos(mc<T> x)
 
             if (x_cv_lb_1 >= 0.5 * pi) {
                 // convex region
-                cv = cos(x_cv);
+                cv = next_after(cos(x_cv), -1.0); // TODO: might need another rounding here
             } else if (x_cv_lb_1 >= -0.5 * pi && x_cv_ub_1 <= 0.5 * pi) {
                 // concave region
                 cv = secant_of_concave(x_cv, x_cv_lb, x_cv_ub, [](T x) { return cos(x); });
@@ -899,8 +899,10 @@ inline __device__ mc<T> cos_box(mc<T> x)
 template<typename T>
 inline __device__ mc<T> sin(mc<T> x)
 {
-    constexpr T pi_2_round_up = 0x1.921fb54442d19p+0;
-    return cos(x - pi_2_round_up);
+    constexpr mc<T> pi_2 = { .cv  = 0x1.921fb54442d17p+0,
+                             .cc  = 0x1.921fb54442d19p+0,
+                             .box = { 0x1.921fb54442d17p+0, 0x1.921fb54442d19p+0 } };
+    return cos(x - pi_2);
 }
 
 template<typename T>
