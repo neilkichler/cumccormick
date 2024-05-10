@@ -34,7 +34,7 @@ __global__ void setup_randomized_kernel(u64 *sobol_directions,
     int dim = n_dims * idx;
 
     for (int i = 0; i < n_dims; i++) {
-        curand_init(sobol_directions + VECTOR_SIZE * (dim + 0),
+        curand_init(sobol_directions + VECTOR_SIZE * (dim + i),
                     sobol_scrambled_constants[dim + i],
                     0, // offset
                     &state[dim + i]);
@@ -124,18 +124,19 @@ __global__ void generate_and_check(rng_state *state, int n)
     int x_idx = threadIdx.x + blockIdx.x * THREADS_PER_BLOCK;
     int x_dim = n_dims * x_idx;
 
-    int y_idx = threadIdx.y + blockIdx.y * THREADS_PER_BLOCK;
+    // reuse rng state of x for y
+    int y_idx = x_idx;
     int y_dim = n_dims * y_idx;
 
     for (int i = 0; i < n; i++) {
-        mc<double> x = random_mccormick(state, x_dim);
-
         constexpr int n_interior_samples = 128;
+
+        mc<double> x = random_mccormick(state, x_dim);
         double interior_x_samples[n_interior_samples];
         random_interior_samples(state, x, interior_x_samples, n_interior_samples, x_dim + 4);
         check_univariate(x, interior_x_samples, n_interior_samples);
 
-        mc<double> y = random_mccormick(state, threadIdx.y + blockIdx.y * THREADS_PER_BLOCK);
+        mc<double> y = random_mccormick(state, y_dim);
         double interior_y_samples[n_interior_samples];
         random_interior_samples(state, y, interior_y_samples, n_interior_samples, y_dim + 4);
         check_bivariate(x, y, interior_x_samples, interior_y_samples, n_interior_samples);
