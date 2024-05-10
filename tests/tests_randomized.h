@@ -2,4 +2,6 @@
 
 #include <cuda_runtime.h>
 
-void tests_randomized(cudaStream_t stream, cudaEvent_t event);
+#include "tests_common.h"
+
+void tests_randomized(cuda_streams streams, cuda_events events);

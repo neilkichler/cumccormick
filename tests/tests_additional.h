@@ -14,5 +14,5 @@ void tests_additional(cuda_ctx ctx)
     tests_fn(ctx.streams[2 % n], ctx.events[2 % n]);
     tests_bounds(ctx.streams[3 % n], ctx.events[3 % n]);
     tests_root(ctx.streams[4 % n], ctx.events[4 % n]);
-    tests_randomized(ctx.streams[5 % n], ctx.events[5 % n]);
+    tests_randomized(ctx.streams, ctx.events);
 }

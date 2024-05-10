@@ -95,7 +95,7 @@ __device__ void check_bivariate(mc<T> x, mc<T> y, T *interior_x_samples, T *inte
     }
 }
 
-__global__ void generate_and_check(rng_state *state, int n)
+__global__ void generate_and_check(rng_state *state, int n, u64 offset)
 {
     // TODO: relax sampling to allow intervals that are tighter than the McCormick bound.
     auto random_mccormick = [](rng_state *state, int offset) {
@@ -128,9 +128,13 @@ __global__ void generate_and_check(rng_state *state, int n)
     int y_idx = x_idx;
     int y_dim = n_dims * y_idx;
 
-    for (int i = 0; i < n; i++) {
-        constexpr int n_interior_samples = 128;
+    for (int i = 0; i < n_dims; i++) {
+        skipahead<rng_state *>(offset, &state[x_dim + i]);
+    }
 
+    constexpr int n_interior_samples = 128;
+
+    for (int i = 0; i < n; i++) {
         mc<double> x = random_mccormick(state, x_dim);
         double interior_x_samples[n_interior_samples];
         random_interior_samples(state, x, interior_x_samples, n_interior_samples, x_dim + 4);
@@ -143,10 +147,10 @@ __global__ void generate_and_check(rng_state *state, int n)
     }
 }
 
-void tests_randomized(cudaStream_t stream, cudaEvent_t event)
+void tests_randomized(cuda_streams streams, cuda_events events)
 {
 
-    curandStateScrambledSobol64_t *states;
+    rng_state *states;
     curandDirectionVectors64_t *h_directions;
 
     u64 *h_scrambled_constants;
@@ -164,15 +168,18 @@ void tests_randomized(cudaStream_t stream, cudaEvent_t event)
     CUDA_CHECK(cudaMalloc(&d_scrambled_constants, n_dims * TOTAL_THREADS * sizeof(*d_scrambled_constants)));
     CUDA_CHECK(cudaMemcpy(d_scrambled_constants, h_scrambled_constants, n_dims * TOTAL_THREADS * sizeof(*d_scrambled_constants), cudaMemcpyHostToDevice));
 
-    setup_randomized_kernel<<<BLOCK_COUNT, THREADS_PER_BLOCK, 0, stream>>>(d_directions, d_scrambled_constants, states);
+    constexpr int n_iterations = 4;
+    constexpr int n_samples    = 256;
 
-    constexpr int n_iterations = 1;
-    constexpr int n_samples    = 512;
+    setup_randomized_kernel<<<BLOCK_COUNT, THREADS_PER_BLOCK, 0, streams[0]>>>(d_directions, d_scrambled_constants, states);
+    cudaStreamSynchronize(streams[0]);
 
     for (int i = 0; i < n_iterations; i++) {
-        // TODO: We can skip ahead in the random number generator to run these kernels in parallel streams
-        generate_and_check<<<BLOCK_COUNT, THREADS_PER_BLOCK, 0, stream>>>(states, n_samples);
+        u64 offset = i * (n_dims * TOTAL_THREADS);
+        generate_and_check<<<BLOCK_COUNT, THREADS_PER_BLOCK, 0, streams[i % streams.size()]>>>(states, n_samples, offset);
     }
+
+    CUDA_CHECK(cudaDeviceSynchronize());
 
     CUDA_CHECK(cudaFree(states));
     CUDA_CHECK(cudaFree(d_directions));
