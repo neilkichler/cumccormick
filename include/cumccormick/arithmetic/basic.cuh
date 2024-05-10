@@ -970,4 +970,30 @@ inline __device__ mc<T> min(mc<T> a, mc<T> b)
              .box = min(a.box, b.box) };
 }
 
+template<typename T>
+inline __device__ T width(mc<T> x)
+{
+    return width(x.box);
+}
+
+template<typename T>
+inline __device__ mc<T> hull(mc<T> a, mc<T> b)
+{
+    return { .cv  = min(a, b).cv,
+             .cc  = max(a, b).cc,
+             .box = convex_hull(a.box, b.box) };
+}
+
+template<typename T>
+inline __device__ bool operator==(mc<T> a, mc<T> b)
+{
+    return a.cv == b.cv && a.cc == b.cc && a.box == b.box;
+}
+
+template<typename T>
+inline __device__ bool operator!=(mc<T> a, mc<T> b)
+{
+    return a.cv != b.cv || a.cc != b.cc || a.box != b.box;
+}
+
 #endif // CUMCCORMICK_ARITHMETIC_BASIC_CUH
