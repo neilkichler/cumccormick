@@ -828,7 +828,7 @@ inline __device__ mc<T> cos(mc<T> x)
             if (left && x <= xj || !left && x >= xj) {
                 return next_after(next_after(cos(x), -1.0), -1.0);
             } else {
-                return secant_of_concave(x, xj, xm, [](T x) { return cos(x); });
+                return next_after(secant_of_concave(x, xj, xm, [](T x) { return cos(x); }), -1.0);
             }
 
             return cos(x);

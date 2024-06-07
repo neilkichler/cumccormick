@@ -170,8 +170,8 @@ __global__ void contains_samples_check_bivariate(mc<T> *xs, mc<T> *ys, std::inte
     };
 
     if (i < n) {
-        mc<T> x    = xs[j];
-        mc<T> y    = ys[k];
+        mc<T> x = xs[j];
+        mc<T> y = ys[k];
 
         T x_sample = x.cv + static_cast<T>(i) * (x.cc - x.cv) / static_cast<T>(n);
         T y_sample = y.cv + static_cast<T>(i) * (y.cc - y.cv) / static_cast<T>(n);
@@ -216,7 +216,7 @@ __global__ void test_fn_kernel()
 void bounds_kernel(cudaStream_t stream)
 {
     constexpr int n_samples = 512;
-    constexpr int n_xs      = 10;
+    constexpr int n_xs      = 11;
 
     mc<double> xs[n_xs] = {
         { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } },
@@ -229,6 +229,7 @@ void bounds_kernel(cudaStream_t stream)
         { .cv = -3.96, .cc = -3.25, .box = { .lb = -4.1, .ub = -3.1 } },
         { .cv = 0.875, .cc = 0.875, .box = { .lb = 0.875, .ub = 0.875 } },
         { .cv = 0.5, .cc = 0.5, .box = { .lb = 0.5, .ub = 0.5 } },
+        { .cv = 0x1.eb12p-1, .cc = 0x1.eb12p-1, .box = { .lb = 0x1.eb12p-2, .ub = 0x1.eb12p-1 } },
     };
 
     mc<double> *d_xs;
