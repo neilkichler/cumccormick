@@ -18,8 +18,8 @@
 using u64       = unsigned long long;
 using rng_state = curandStateScrambledSobol64_t;
 
-constexpr int BLOCK_COUNT       = 64;
-constexpr int THREADS_PER_BLOCK = 64;
+constexpr int BLOCK_COUNT       = 256;
+constexpr int THREADS_PER_BLOCK = 32;
 constexpr int TOTAL_THREADS     = BLOCK_COUNT * THREADS_PER_BLOCK;
 constexpr int VECTOR_SIZE       = 64;
 
@@ -98,20 +98,13 @@ __device__ void check_bivariate(mc<T> x, mc<T> y, T *interior_x_samples, T *inte
 __global__ void generate_and_check(rng_state *state, int n, u64 offset)
 {
     // TODO: relax sampling to allow intervals that are tighter than the McCormick bound.
+
     auto random_mccormick = [](rng_state *state, int offset) {
         mc<double> x;
-        x.cv = curand_uniform_double(&state[offset + 0]);
-        do {
-            x.cc = curand_uniform_double(&state[offset + 1]);
-        } while (x.cv > x.cc);
-
-        do {
-            x.box.lb = curand_uniform_double(&state[offset + 2]);
-        } while (x.box.lb > x.cv);
-
-        do {
-            x.box.ub = curand_uniform_double(&state[offset + 3]);
-        } while (x.box.ub < x.cc);
+        x.cv     = curand_uniform_double(&state[offset + 0]);
+        x.cc     = x.cv + (1.0 - x.cv) * curand_uniform_double(&state[offset + 1]);
+        x.box.lb = x.cv * curand_uniform_double(&state[offset + 2]);
+        x.box.ub = x.cc + (1.0 - x.cc) * curand_uniform_double(&state[offset + 3]);
         return x;
     };
 
