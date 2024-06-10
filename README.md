@@ -6,12 +6,38 @@ CuMcCormick is a CUDA library for McCormick relaxations.
 
 ## Installation
 > Please make sure that you have installed everything mentioned in the section [Build Requirements](#build-requirements).
+
+### System-wide
 ```bash
 git clone https://github.com/neilkichler/cumccormick.git
-cd cumccormick
+cd cuinterval
 cmake --preset release
 cmake --build build
 cmake --install build
+```
+
+### CMake Project
+
+
+#### [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
+```cmake
+CPMAddPackage("gh:neilkichler/cumccormick@0.0.1")
+```
+
+#### [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+  cuinterval
+  GIT_REPOSITORY git@github.com:neilkichler/cumccormick.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(cumccormick)
+```
+
+In either case, you can link to the library using:
+```cmake
+target_link_libraries(${PROJECT_NAME} PUBLIC cumccormick)
 ```
 
 ## Example
