@@ -113,33 +113,14 @@ cudaGraph_t construct_graph(cuda_ctx &ctx, mc<T> *xs, mc<T> *ys, mc<T> *res, mc<
 
     {
         // copy xs to device buffer d_xs
-        cudaMemcpy3DParms memcpy_params = {
-            .srcArray = NULL,
-            .srcPos   = make_cudaPos(0, 0, 0),
-            .srcPtr   = make_cudaPitchedPtr(xs, n * sizeof(*xs), n, 1),
-            .dstArray = NULL,
-            .dstPos   = make_cudaPos(0, 0, 0),
-            .dstPtr   = make_cudaPitchedPtr(d_xs, n * sizeof(*d_xs), n, 1),
-            .extent   = make_cudaExtent(n * sizeof(*d_xs), 1, 1),
-            .kind     = cudaMemcpyHostToDevice
-        };
-
-        CUDA_CHECK(cudaGraphAddMemcpyNode(&node_memcpy, graph, NULL, 0, &memcpy_params));
+        CUDA_CHECK(cudaGraphAddMemcpyNode1D(&node_memcpy, graph, NULL, 0,
+                                            d_xs, xs, n * sizeof(*xs), cudaMemcpyHostToDevice));
         dependencies.push_back(node_memcpy);
     }
     {
         // copy ys to device buffer d_ys
-        cudaMemcpy3DParms memcpy_params = {
-            .srcArray = NULL,
-            .srcPos   = make_cudaPos(0, 0, 0),
-            .srcPtr   = make_cudaPitchedPtr(ys, n * sizeof(*ys), n, 1),
-            .dstArray = NULL,
-            .dstPos   = make_cudaPos(0, 0, 0),
-            .dstPtr   = make_cudaPitchedPtr(d_ys, n * sizeof(*d_ys), n, 1),
-            .extent   = make_cudaExtent(n * sizeof(*d_ys), 1, 1),
-            .kind     = cudaMemcpyHostToDevice
-        };
-        CUDA_CHECK(cudaGraphAddMemcpyNode(&node_memcpy, graph, NULL, 0, &memcpy_params));
+        CUDA_CHECK(cudaGraphAddMemcpyNode1D(&node_memcpy, graph, NULL, 0,
+                                            d_ys, ys, n * sizeof(*xs), cudaMemcpyHostToDevice));
         dependencies.push_back(node_memcpy);
     }
 
@@ -266,17 +247,8 @@ cudaGraph_t construct_graph(cuda_ctx &ctx, mc<T> *xs, mc<T> *ys, mc<T> *res, mc<
     auto v12 = d_res;
     {
         // copy result from device buffer d_res to res
-        cudaMemcpy3DParms memcpy_params = {
-            .srcArray = NULL,
-            .srcPos   = make_cudaPos(0, 0, 0),
-            .srcPtr   = make_cudaPitchedPtr(d_res, n * sizeof(*d_res), n, 1),
-            .dstArray = NULL,
-            .dstPos   = make_cudaPos(0, 0, 0),
-            .dstPtr   = make_cudaPitchedPtr(res, n * sizeof(*res), n, 1),
-            .extent   = make_cudaExtent(n * sizeof(*d_res), 1, 1),
-            .kind     = cudaMemcpyDeviceToHost
-        };
-        CUDA_CHECK(cudaGraphAddMemcpyNode(&node_memcpy, graph, dependencies.data(), dependencies.size(), &memcpy_params));
+        CUDA_CHECK(cudaGraphAddMemcpyNode1D(&node_memcpy, graph, dependencies.data(), dependencies.size(),
+                                            res, d_res, n * sizeof(*res), cudaMemcpyDeviceToHost));
     }
 
     return graph;
