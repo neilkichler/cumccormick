@@ -1,5 +1,7 @@
 #include "tests_additional.h"
 
+#include <array>
+
 #include <cumccormick/cumccormick.h>
 
 int main(int argc, char *argv[])

@@ -1,5 +1,6 @@
 #include <cumccormick/arithmetic/basic.cuh>
 
+#include <array>
 #include <cstdio>
 #include <vector>
 
