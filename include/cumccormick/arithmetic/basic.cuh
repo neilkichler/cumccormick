@@ -13,14 +13,16 @@
 template<typename T>
 using mc = mccormick<T>;
 
+#define cuda_fn inline constexpr __device__
+
 template<typename T>
-inline __device__ T mid(T v, T lb, T ub)
+cuda_fn T mid(T v, T lb, T ub)
 {
     return std::clamp(v, lb, ub);
 }
 
 template<typename T>
-inline __device__ mc<T> neg(mc<T> x)
+cuda_fn mc<T> neg(mc<T> x)
 {
     return { .cv  = -x.cc,
              .cc  = -x.cv,
@@ -28,7 +30,7 @@ inline __device__ mc<T> neg(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> add(mc<T> a, mc<T> b)
+cuda_fn mc<T> add(mc<T> a, mc<T> b)
 {
     return { .cv  = intrinsic::add_down(a.cv, b.cv),
              .cc  = intrinsic::add_up(a.cc, b.cc),
@@ -36,7 +38,7 @@ inline __device__ mc<T> add(mc<T> a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> add(T a, mc<T> b)
+cuda_fn mc<T> add(T a, mc<T> b)
 {
     return { .cv  = intrinsic::add_down(a, b.cv),
              .cc  = intrinsic::add_up(a, b.cc),
@@ -44,7 +46,7 @@ inline __device__ mc<T> add(T a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> sub(mc<T> a, mc<T> b)
+cuda_fn mc<T> sub(mc<T> a, mc<T> b)
 {
     return { .cv  = intrinsic::sub_down(a.cv, b.cc),
              .cc  = intrinsic::sub_up(a.cc, b.cv),
@@ -52,7 +54,7 @@ inline __device__ mc<T> sub(mc<T> a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> sub(T a, mc<T> b)
+cuda_fn mc<T> sub(T a, mc<T> b)
 {
     return { .cv  = intrinsic::sub_down(a, b.cc),
              .cc  = intrinsic::sub_up(a, b.cv),
@@ -60,7 +62,7 @@ inline __device__ mc<T> sub(T a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> sub(mc<T> a, T b)
+cuda_fn mc<T> sub(mc<T> a, T b)
 {
     return { .cv  = intrinsic::sub_down(a.cv, b),
              .cc  = intrinsic::sub_up(a.cc, b),
@@ -68,7 +70,7 @@ inline __device__ mc<T> sub(mc<T> a, T b)
 }
 
 template<typename T>
-inline __device__ mc<T> mul(T a, mc<T> b)
+cuda_fn mc<T> mul(T a, mc<T> b)
 {
     bool is_neg = a < static_cast<T>(0);
     return { .cv  = intrinsic::mul_down(a, is_neg ? b.cc : b.cv),
@@ -77,7 +79,7 @@ inline __device__ mc<T> mul(T a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> mul_nearest_even_rounding(mc<T> a, mc<T> b)
+cuda_fn mc<T> mul_nearest_even_rounding(mc<T> a, mc<T> b)
 {
     using namespace intrinsic;
 
@@ -103,7 +105,7 @@ inline __device__ mc<T> mul_nearest_even_rounding(mc<T> a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> mul(mc<T> a, mc<T> b)
+cuda_fn mc<T> mul(mc<T> a, mc<T> b)
 {
     using namespace intrinsic;
 
@@ -129,7 +131,7 @@ inline __device__ mc<T> mul(mc<T> a, mc<T> b)
 }
 
 template<typename T, typename F>
-inline __device__ T secant_of_concave(T x, T lb, T ub, F &&f)
+cuda_fn T secant_of_concave(T x, T lb, T ub, F &&f)
 {
     // TODO: We could also just pass in the f(ub) and f(lb)
     //       and not the function.
@@ -146,7 +148,7 @@ inline __device__ T secant_of_concave(T x, T lb, T ub, F &&f)
 }
 
 template<typename T, typename F>
-inline __device__ T secant_of_convex(T x, T lb, T ub, F &&f)
+cuda_fn T secant_of_convex(T x, T lb, T ub, F &&f)
 {
     // TODO: Does not consider rounding of f
     using namespace intrinsic;
@@ -160,7 +162,7 @@ inline __device__ T secant_of_convex(T x, T lb, T ub, F &&f)
 }
 
 template<typename T>
-inline __device__ mc<T> recip(mc<T> x)
+cuda_fn mc<T> recip(mc<T> x)
 {
     using namespace intrinsic;
 
@@ -205,7 +207,7 @@ inline __device__ mc<T> recip(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> div(mc<T> a, T b)
+cuda_fn mc<T> div(mc<T> a, T b)
 {
     bool is_neg = b < static_cast<T>(0);
     return { .cv  = intrinsic::div_down(is_neg ? a.cc : a.cv, b),
@@ -214,26 +216,26 @@ inline __device__ mc<T> div(mc<T> a, T b)
 }
 
 template<typename T>
-inline __device__ mc<T> div(mc<T> a, mc<T> b)
+cuda_fn mc<T> div(mc<T> a, mc<T> b)
 {
     // TODO: implement tighter relaxation
     return mul(a, recip(b));
 }
 
 template<typename T>
-inline __device__ T inf(mc<T> x)
+cuda_fn T inf(mc<T> x)
 {
     return inf(x.box);
 }
 
 template<typename T>
-inline __device__ T sup(mc<T> x)
+cuda_fn T sup(mc<T> x)
 {
     return sup(x.box);
 }
 
 template<typename T>
-inline __device__ mc<T> sqr(mc<T> x)
+cuda_fn mc<T> sqr(mc<T> x)
 {
     using namespace intrinsic;
 
@@ -260,7 +262,7 @@ inline __device__ mc<T> sqr(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> abs(mc<T> x)
+cuda_fn mc<T> abs(mc<T> x)
 {
     T xmin  = mid(static_cast<T>(0), inf(x), sup(x));
     T midcv = mid(xmin, x.cv, x.cc);
@@ -275,13 +277,13 @@ inline __device__ mc<T> abs(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> fabs(mc<T> x)
+cuda_fn mc<T> fabs(mc<T> x)
 {
     return abs(x);
 }
 
 template<typename T>
-inline __device__ mc<T> exp(mc<T> x)
+cuda_fn mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
     // TODO: error in exp not accounted for in secant computation
@@ -295,7 +297,7 @@ inline __device__ mc<T> exp(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> sqrt(mc<T> x)
+cuda_fn mc<T> sqrt(mc<T> x)
 {
     using namespace intrinsic;
     T midcv = mid(inf(x), x.cv, x.cc);
@@ -308,7 +310,7 @@ inline __device__ mc<T> sqrt(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
+cuda_fn mc<T> pown_even(mc<T> x, std::integral auto n)
 {
     using namespace intrinsic;
 
@@ -353,7 +355,7 @@ inline __device__ mc<T> pown_even(mc<T> x, std::integral auto n)
 }
 
 template<typename T>
-inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
+cuda_fn mc<T> pown(mc<T> x, std::integral auto n)
 {
     using namespace intrinsic;
 
@@ -406,121 +408,121 @@ inline __device__ mc<T> pown(mc<T> x, std::integral auto n)
 }
 
 template<typename T>
-inline __device__ mc<T> pow(mc<T> x, std::integral auto n)
+cuda_fn mc<T> pow(mc<T> x, std::integral auto n)
 {
     return pown(x, n);
 }
 
 template<typename T>
-inline __device__ mc<T> operator+(mc<T> a, mc<T> b)
+cuda_fn mc<T> operator+(mc<T> a, mc<T> b)
 {
     return add(a, b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator+(T a, mc<T> b)
+cuda_fn mc<T> operator+(T a, mc<T> b)
 {
     return add(a, b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator+(std::integral auto a, mc<T> b)
+cuda_fn mc<T> operator+(std::integral auto a, mc<T> b)
 {
     return add(static_cast<T>(a), b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator+(mc<T> a, T b)
+cuda_fn mc<T> operator+(mc<T> a, T b)
 {
     return add(b, a);
 }
 
 template<typename T>
-inline __device__ mc<T> operator+(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator+(mc<T> a, std::integral auto b)
 {
     return add(static_cast<T>(b), a);
 }
 
 template<typename T>
-inline __device__ mc<T> operator-(mc<T> a)
+cuda_fn mc<T> operator-(mc<T> a)
 {
     return neg(a);
 }
 
 template<typename T>
-inline __device__ mc<T> operator-(mc<T> a, mc<T> b)
+cuda_fn mc<T> operator-(mc<T> a, mc<T> b)
 {
     return sub(a, b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator-(T a, mc<T> b)
+cuda_fn mc<T> operator-(T a, mc<T> b)
 {
     return sub(a, b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator-(std::integral auto a, mc<T> b)
+cuda_fn mc<T> operator-(std::integral auto a, mc<T> b)
 {
     return sub(static_cast<T>(a), b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator-(mc<T> a, T b)
+cuda_fn mc<T> operator-(mc<T> a, T b)
 {
     return sub(a, b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator-(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator-(mc<T> a, std::integral auto b)
 {
     return sub(a, static_cast<T>(b));
 }
 
 template<typename T>
-inline __device__ mc<T> operator*(T a, mc<T> b)
+cuda_fn mc<T> operator*(T a, mc<T> b)
 {
     return mul(a, b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator*(std::integral auto a, mc<T> b)
+cuda_fn mc<T> operator*(std::integral auto a, mc<T> b)
 {
     return mul(static_cast<T>(a), b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator*(mc<T> a, T b)
+cuda_fn mc<T> operator*(mc<T> a, T b)
 {
     return mul(b, a);
 }
 
 template<typename T>
-inline __device__ mc<T> operator*(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator*(mc<T> a, std::integral auto b)
 {
     return mul(static_cast<T>(b), a);
 }
 
 template<typename T>
-inline __device__ mc<T> operator*(mc<T> a, mc<T> b)
+cuda_fn mc<T> operator*(mc<T> a, mc<T> b)
 {
     return mul(b, a);
 }
 
 template<typename T>
-inline __device__ mc<T> operator/(mc<T> a, T b)
+cuda_fn mc<T> operator/(mc<T> a, T b)
 {
     return div(a, b);
 }
 
 template<typename T>
-inline __device__ mc<T> operator/(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator/(mc<T> a, std::integral auto b)
 {
     return div(a, static_cast<T>(b));
 }
 
 template<typename T>
-inline __device__ mc<T> operator/(mc<T> a, mc<T> b)
+cuda_fn mc<T> operator/(mc<T> a, mc<T> b)
 {
     return div(a, b);
 }
@@ -543,7 +545,7 @@ struct root_solver_state
 };
 
 template<typename T>
-inline __device__ T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> options = {})
+cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> options = {})
 {
     assert(f(lb) * f(ub) <= 0.0 && "sign must be different for f(lb) and f(ub)");
 
@@ -583,7 +585,7 @@ inline __device__ T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options
 }
 
 template<std::floating_point T>
-inline __device__ auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&step_fn, T epsilon = 1e-30)
+cuda_fn auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&step_fn, T epsilon = 1e-30)
 {
     auto [x, lb, ub, _] = state;
 
@@ -616,13 +618,13 @@ inline __device__ auto derivative_or_bisection_step(root_solver_state<T> state, 
     return root_solver_state { x_new, lb, ub, y };
 }
 
-inline __device__ auto newton_step(auto x, auto y, auto &&df)
+cuda_fn auto newton_step(auto x, auto y, auto &&df)
 {
     return y / df(x);
 }
 
 template<typename T>
-inline __device__ auto newton_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df)
+cuda_fn auto newton_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df)
 {
     auto [x, lb, ub, _] = state;
     T y                 = f(x);
@@ -630,13 +632,13 @@ inline __device__ auto newton_step(root_solver_state<T> state, auto delta_x, aut
     return root_solver_state { x, lb, ub, y };
 }
 
-inline __device__ auto halley_step(auto x, auto y, auto &&df, auto &&ddf)
+cuda_fn auto halley_step(auto x, auto y, auto &&df, auto &&ddf)
 {
     return (2.0 * y * df(x)) / (2.0 * pow(df(x), 2) - y * ddf(x));
 }
 
 template<typename T>
-inline __device__ auto halley_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf)
+cuda_fn auto halley_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf)
 {
     auto [x, lb, ub, _] = state;
     T y                 = f(x);
@@ -644,7 +646,7 @@ inline __device__ auto halley_step(root_solver_state<T> state, auto delta_x, aut
     return root_solver_state { x, lb, ub, y };
 }
 
-inline __device__ auto householder_step(auto x, auto y, auto &&df, auto &&ddf, auto &&dddf)
+cuda_fn auto householder_step(auto x, auto y, auto &&df, auto &&ddf, auto &&dddf)
 {
     auto dy   = df(x);
     auto ddy  = ddf(x);
@@ -654,7 +656,7 @@ inline __device__ auto householder_step(auto x, auto y, auto &&df, auto &&ddf, a
 }
 
 template<typename T>
-inline __device__ auto householder_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
+cuda_fn auto householder_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
 {
     auto [x, lb, ub, _] = state;
     T y                 = f(x);
@@ -663,70 +665,70 @@ inline __device__ auto householder_step(root_solver_state<T> state, auto delta_x
 }
 
 template<std::floating_point T>
-inline __device__ auto newton_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df)
+cuda_fn auto newton_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df)
 {
     auto step_fn = [df](auto x, auto y) { return newton_step(x, y, df); };
     return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
 }
 
 template<std::floating_point T>
-inline __device__ auto halley_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf)
+cuda_fn auto halley_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf)
 {
     auto step_fn = [df, ddf](auto x, auto y) { return halley_step(x, y, df, ddf); };
     return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
 }
 
 template<std::floating_point T>
-inline __device__ auto householder_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
+cuda_fn auto householder_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
 {
     auto step_fn = [df, ddf, dddf](auto x, auto y) { return householder_step(x, y, df, ddf, dddf); };
     return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
 }
 
 template<typename T>
-inline __device__ T root_newton(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
+cuda_fn T root_newton(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
 {
     auto step_fn = [f, df](auto x, auto delta_x) { return newton_step(x, delta_x, f, df); };
     return root(f, step_fn, x0, lb, ub, options);
 }
 
 template<typename T>
-inline __device__ T root_newton_bisection(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
+cuda_fn T root_newton_bisection(auto &&f, auto &&df, T x0, T lb, T ub, solver_options<T> options = {})
 {
     auto step_fn = [f, df](auto x, auto delta_x) { return newton_bisection_step(x, delta_x, f, df); };
     return root(f, step_fn, x0, lb, ub, options);
 }
 
 template<typename T>
-inline __device__ T root_halley(auto &&f, auto &&df, auto &&ddf, T x0, T lb, T ub, solver_options<T> options = {})
+cuda_fn T root_halley(auto &&f, auto &&df, auto &&ddf, T x0, T lb, T ub, solver_options<T> options = {})
 {
     auto step_fn = [f, df, ddf](auto x, auto delta_x) { return halley_step(x, delta_x, f, df, ddf); };
     return root(f, step_fn, x0, lb, ub, options);
 }
 
 template<typename T>
-inline __device__ T root_halley_bisection(auto &&f, auto &&df, auto &&ddf, T x0, T lb, T ub, solver_options<T> options = {})
+cuda_fn T root_halley_bisection(auto &&f, auto &&df, auto &&ddf, T x0, T lb, T ub, solver_options<T> options = {})
 {
     auto step_fn = [f, df, ddf](auto x, auto delta_x) { return halley_bisection_step(x, delta_x, f, df, ddf); };
     return root(f, step_fn, x0, lb, ub, options);
 }
 
 template<typename T>
-inline __device__ T root_householder(auto &&f, auto &&df, auto &&ddf, auto &&dddf, T x0, T lb, T ub, solver_options<T> options = {})
+cuda_fn T root_householder(auto &&f, auto &&df, auto &&ddf, auto &&dddf, T x0, T lb, T ub, solver_options<T> options = {})
 {
     auto step_fn = [f, df, ddf, dddf](auto x, auto delta_x) { return householder_step(x, delta_x, f, df, ddf, dddf); };
     return root(f, step_fn, x0, lb, ub, options);
 }
 
 template<typename T>
-inline __device__ T root_householder_bisection(auto &&f, auto &&df, auto &&ddf, auto &&dddf, T x0, T lb, T ub, solver_options<T> options = {})
+cuda_fn T root_householder_bisection(auto &&f, auto &&df, auto &&ddf, auto &&dddf, T x0, T lb, T ub, solver_options<T> options = {})
 {
     auto step_fn = [f, df, ddf, dddf](auto x, auto delta_x) { return householder_bisection_step(x, delta_x, f, df, ddf, dddf); };
     return root(f, step_fn, x0, lb, ub, options);
 }
 
 template<typename T>
-inline __device__ mc<T> cos(mc<T> x)
+cuda_fn mc<T> cos(mc<T> x)
 {
     using namespace intrinsic;
 
@@ -885,7 +887,7 @@ inline __device__ mc<T> cos(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> cos_box(mc<T> x)
+cuda_fn mc<T> cos_box(mc<T> x)
 {
     using namespace intrinsic;
 
@@ -897,7 +899,7 @@ inline __device__ mc<T> cos_box(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> sin(mc<T> x)
+cuda_fn mc<T> sin(mc<T> x)
 {
     constexpr mc<T> pi_2 = { .cv  = 0x1.921fb54442d17p+0,
                              .cc  = 0x1.921fb54442d19p+0,
@@ -906,7 +908,7 @@ inline __device__ mc<T> sin(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> log(mc<T> x)
+cuda_fn mc<T> log(mc<T> x)
 {
     using namespace intrinsic;
 
@@ -931,7 +933,7 @@ inline __device__ mc<T> log(mc<T> x)
 }
 
 template<typename T>
-inline __device__ mc<T> max(mc<T> a, mc<T> b)
+cuda_fn mc<T> max(mc<T> a, mc<T> b)
 {
     T cc {};
 
@@ -952,7 +954,7 @@ inline __device__ mc<T> max(mc<T> a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ mc<T> min(mc<T> a, mc<T> b)
+cuda_fn mc<T> min(mc<T> a, mc<T> b)
 {
     T cv {};
 
@@ -971,13 +973,13 @@ inline __device__ mc<T> min(mc<T> a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ T width(mc<T> x)
+cuda_fn T width(mc<T> x)
 {
     return width(x.box);
 }
 
 template<typename T>
-inline __device__ mc<T> hull(mc<T> a, mc<T> b)
+cuda_fn mc<T> hull(mc<T> a, mc<T> b)
 {
     return { .cv  = min(a, b).cv,
              .cc  = max(a, b).cc,
@@ -985,13 +987,13 @@ inline __device__ mc<T> hull(mc<T> a, mc<T> b)
 }
 
 template<typename T>
-inline __device__ bool operator==(mc<T> a, mc<T> b)
+cuda_fn bool operator==(mc<T> a, mc<T> b)
 {
     return a.cv == b.cv && a.cc == b.cc && a.box == b.box;
 }
 
 template<typename T>
-inline __device__ bool operator!=(mc<T> a, mc<T> b)
+cuda_fn bool operator!=(mc<T> a, mc<T> b)
 {
     return a.cv != b.cv || a.cc != b.cc || a.box != b.box;
 }
