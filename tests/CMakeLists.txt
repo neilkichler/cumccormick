@@ -40,12 +40,6 @@ target_link_libraries(tests PRIVATE CUDA::cuda_driver)
 target_link_libraries(tests PRIVATE CUDA::cudart)
 target_link_libraries(tests PRIVATE CUDA::curand)
 
-# Enable OpenMP
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(tests PUBLIC OpenMP::OpenMP_CXX)
-endif()
-
 # Register tests for use in ctest
 add_test(NAME testcumccormick COMMAND tests)
 
