@@ -1,7 +1,7 @@
 #ifndef CUMCCORMICK_ARITHMETIC_MCCORMICK_H
 #define CUMCCORMICK_ARITHMETIC_MCCORMICK_H
 
-#include <cuinterval/arithmetic/interval.h>
+#include <cuinterval/interval.h>
 
 #include <compare>
 
