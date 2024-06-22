@@ -1,7 +1,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include <cumccormick/arithmetic/basic.cuh>
+#include <cumccormick/cumccormick.cuh>
 
 #include "../common.h"
 #include "../tests/tests_common.h"

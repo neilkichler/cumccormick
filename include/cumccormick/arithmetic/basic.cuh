@@ -4,11 +4,11 @@
 #include <cuinterval/arithmetic/basic.cuh>
 #include <cuinterval/arithmetic/intrinsic.cuh>
 
+#include <cumccormick/mccormick.h>
+
 #include <algorithm>
 #include <cmath>
 #include <numbers>
-
-#include "mccormick.h"
 
 template<typename T>
 using mc = mccormick<T>;

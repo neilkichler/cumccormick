@@ -1,4 +1,4 @@
-#include <cumccormick/arithmetic/basic.cuh>
+#include <cumccormick/cumccormick.cuh>
 
 #include "tests_common.h"
 

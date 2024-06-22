@@ -1,7 +1,7 @@
 #include "tests_common.h"
 #include "tests_randomized.h"
 
-#include <cumccormick/arithmetic/basic.cuh>
+#include <cumccormick/cumccormick.cuh>
 
 #include <cstdio>
 #include <curand_kernel.h>
