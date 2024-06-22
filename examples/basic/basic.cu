@@ -47,7 +47,7 @@ int main()
     CUDA_CHECK(cudaMemcpy(res, d_res, n * sizeof(*res), cudaMemcpyDeviceToHost));
 
     auto r = res[0];
-    printf("beale(0, 0) = " MCCORMICK_FORMAT, r.box.lb, r.cv, r.cc, r.box.ub);
+    printf("beale(0, 0) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
 
     CUDA_CHECK(cudaFree(d_xs));
     CUDA_CHECK(cudaFree(d_ys));
