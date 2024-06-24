@@ -755,7 +755,8 @@ cuda_fn mc<T> cos(mc<T> x)
             argmax = x_ub;
         } else if (x_ub_centered >= pi) {
             // more than one period
-            return { .cv = -1.0, .cc = 1.0, .box = { -1.0, 1.0 } };
+            argmin = pi - two_pi_k_lb;
+            argmax = -two_pi_k_lb;
         } else {
             // increasing then decreasing
             argmin = (cos(x_lb_centered) <= cos(x_ub_centered)) ? x_lb : x_ub; // take smallest of the two endpoints
@@ -769,10 +770,11 @@ cuda_fn mc<T> cos(mc<T> x)
             argmax = x_lb;
         } else if (x_ub_centered >= 2.0 * pi) {
             // more than one period
-            return { .cv = -1.0, .cc = 1.0, .box = { -1.0, 1.0 } };
+            argmin = pi - two_pi_k_lb;
+            argmax = 2.0 * pi * (1.0 - k);
         } else {
             // decreasing then increasing
-            argmin = pi * (1.0 - 2.0 * k);
+            argmin = pi - two_pi_k_lb;
             argmax = (cos(x_lb_centered) >= cos(x_ub_centered)) ? x_lb : x_ub;
         }
     }
