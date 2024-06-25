@@ -1,7 +1,7 @@
+#include <cumccormick/cumccormick.cuh>
+
 #include "tests_common.h"
 #include "tests_randomized.h"
-
-#include <cumccormick/cumccormick.cuh>
 
 #include <cstdio>
 #include <curand_kernel.h>
@@ -14,6 +14,9 @@
             abort();                                  \
         }                                             \
     } while (0)
+
+template<typename T>
+using mc = cu::mccormick<T>;
 
 using u64       = unsigned long long;
 using rng_state = curandStateScrambledSobol64_t;

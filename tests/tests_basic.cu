@@ -4,6 +4,9 @@
 
 #include <stdio.h>
 
+template<typename T>
+using mc = cu::mccormick<T>;
+
 __device__ void print(mc<double> x)
 {
     printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, x.box.ub);

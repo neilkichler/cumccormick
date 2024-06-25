@@ -7,7 +7,11 @@
 
 __global__ void root_kernel()
 {
-    solver_options<double> opts { .maxiter = 100 };
+    using cu::root_newton_bisection;
+    using cu::root_halley_bisection;
+    using cu::root_householder_bisection;
+
+    cu::solver_options<double> opts { .maxiter = 100 };
     auto tolerance = opts.atol;
     auto check     = [tolerance](auto z, auto z_true) {
         auto lb = z_true - tolerance;

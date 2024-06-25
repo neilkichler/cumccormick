@@ -1,5 +1,3 @@
-#include <cumccormick/cumccormick.cuh>
-
 #include <array>
 #include <cstdio>
 #include <span>

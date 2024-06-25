@@ -5,14 +5,19 @@
 
 #include <compare>
 
-template<typename T, typename I = interval<T>>
+namespace cu
+{
+
+template<typename T, typename I = cu::interval<T>>
 struct mccormick
 {
-    T cv;   // convex underestimation
-    T cc;   // concave overestimation
-    I box;  // interval bounds
+    T cv;  // convex underestimation
+    T cc;  // concave overestimation
+    I box; // interval bounds
 
-    constexpr auto operator<=>(const mccormick&) const = default; 
+    constexpr auto operator<=>(const mccormick &) const = default;
 };
+
+} // namespace cu
 
 #endif // CUMCCORMICK_ARITHMETIC_MCCORMICK_H

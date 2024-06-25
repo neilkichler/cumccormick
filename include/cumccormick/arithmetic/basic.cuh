@@ -10,6 +10,9 @@
 #include <cmath>
 #include <numbers>
 
+namespace cu
+{
+
 template<typename T>
 using mc = mccormick<T>;
 
@@ -238,6 +241,7 @@ template<typename T>
 cuda_fn mc<T> sqr(mc<T> x)
 {
     using namespace intrinsic;
+    using std::abs;
 
     T midcv;
     T midcc;
@@ -264,6 +268,8 @@ cuda_fn mc<T> sqr(mc<T> x)
 template<typename T>
 cuda_fn mc<T> abs(mc<T> x)
 {
+    using std::abs;
+
     T xmin  = mid(static_cast<T>(0), inf(x), sup(x));
     T midcv = mid(xmin, x.cv, x.cc);
 
@@ -286,6 +292,8 @@ template<typename T>
 cuda_fn mc<T> exp(mc<T> x)
 {
     using namespace intrinsic;
+    using std::exp;
+
     // TODO: error in exp not accounted for in secant computation
     T cc = exp(sup(x)) == intrinsic::pos_inf<T>()
         ? intrinsic::pos_inf<T>()
@@ -302,7 +310,7 @@ cuda_fn mc<T> sqrt(mc<T> x)
     using namespace intrinsic;
     T midcv = mid(inf(x), x.cv, x.cc);
     T midcc = mid(sup(x), x.cv, x.cc);
-    T cv    = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return sqrt(x); });
+    T cv    = secant_of_concave(midcv, inf(x), sup(x), [](T x) { using std::sqrt; return sqrt(x); });
 
     return { .cv  = cv,
              .cc  = intrinsic::sqrt_up(midcc),
@@ -313,6 +321,8 @@ template<typename T>
 cuda_fn mc<T> pown_even(mc<T> x, std::integral auto n)
 {
     using namespace intrinsic;
+    using std::abs;
+    using std::pow;
 
     T midcv;
     T midcc;
@@ -358,6 +368,7 @@ template<typename T>
 cuda_fn mc<T> pown(mc<T> x, std::integral auto n)
 {
     using namespace intrinsic;
+    using std::pow;
 
     T cv;
     T cc;
@@ -547,6 +558,8 @@ struct root_solver_state
 template<typename T>
 cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> options = {})
 {
+    using std::abs;
+
     assert(f(lb) * f(ub) <= 0.0 && "sign must be different for f(lb) and f(ub)");
 
     T x       = mid(x0, lb, ub);
@@ -587,6 +600,8 @@ cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> option
 template<std::floating_point T>
 cuda_fn auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&step_fn, T epsilon = 1e-30)
 {
+    using std::abs;
+
     auto [x, lb, ub, _] = state;
 
     T y    = f(x);
@@ -634,6 +649,7 @@ cuda_fn auto newton_step(root_solver_state<T> state, auto delta_x, auto &&f, aut
 
 cuda_fn auto halley_step(auto x, auto y, auto &&df, auto &&ddf)
 {
+    using std::pow;
     return (2.0 * y * df(x)) / (2.0 * pow(df(x), 2) - y * ddf(x));
 }
 
@@ -648,6 +664,8 @@ cuda_fn auto halley_step(root_solver_state<T> state, auto delta_x, auto &&f, aut
 
 cuda_fn auto householder_step(auto x, auto y, auto &&df, auto &&ddf, auto &&dddf)
 {
+    using std::pow;
+
     auto dy   = df(x);
     auto ddy  = ddf(x);
     auto dddy = dddf(x);
@@ -731,6 +749,9 @@ template<typename T>
 cuda_fn mc<T> cos(mc<T> x)
 {
     using namespace intrinsic;
+    using std::abs;
+    using std::cos;
+    using std::sin;
 
     // TODO: use rounded ops
 
@@ -913,6 +934,7 @@ template<typename T>
 cuda_fn mc<T> log(mc<T> x)
 {
     using namespace intrinsic;
+    using std::log;
 
     // since log is monotonically increasing:
     //
@@ -937,6 +959,8 @@ cuda_fn mc<T> log(mc<T> x)
 template<typename T>
 cuda_fn mc<T> max(mc<T> a, mc<T> b)
 {
+    using std::max;
+
     T cc {};
 
     if (sup(a) <= inf(b)) {
@@ -958,6 +982,8 @@ cuda_fn mc<T> max(mc<T> a, mc<T> b)
 template<typename T>
 cuda_fn mc<T> min(mc<T> a, mc<T> b)
 {
+    using std::min;
+
     T cv {};
 
     if (sup(a) <= inf(b)) {
@@ -1000,4 +1026,5 @@ cuda_fn bool operator!=(mc<T> a, mc<T> b)
     return a.cv != b.cv || a.cc != b.cc || a.box != b.box;
 }
 
+} // namespace cu
 #endif // CUMCCORMICK_ARITHMETIC_BASIC_CUH

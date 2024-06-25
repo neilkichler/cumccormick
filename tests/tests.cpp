@@ -2,8 +2,6 @@
 
 #include <array>
 
-#include <cumccormick/cumccormick.h>
-
 int main(int argc, char *argv[])
 {
     CUDA_CHECK(cudaSetDevice(0));
