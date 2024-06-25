@@ -17,8 +17,7 @@ target_include_directories(
 )
 
 # C++20 is required for all users of the library
-target_compile_features(cumccormick PUBLIC cxx_std_20)
-target_compile_features(cumccormick PUBLIC cuda_std_20)
+target_compile_features(cumccormick PUBLIC cxx_std_20 cuda_std_20)
 
 source_group(
     TREE "${INCLUDE_PATH}"
