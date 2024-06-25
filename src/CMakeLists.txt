@@ -5,6 +5,7 @@ set(headers
     "${LIB_PATH}/arithmetic/basic.cuh"
     "${LIB_PATH}/cumccormick.cuh"
     "${LIB_PATH}/cumccormick.h"
+    "${LIB_PATH}/format.h"
     "${LIB_PATH}/mccormick.h"
 )
 
