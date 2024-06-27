@@ -80,7 +80,7 @@ The documentation is available [here](https://neilkichler.github.io/cumccormick)
 ## Build
 
 ### Build Requirements
-We require C++20, CMake v3.21+, Ninja, and recent C++ and CUDA compilers.
+We require C++20, CMake v3.25.2+, Ninja, and recent C++ and CUDA compilers.
 
 #### Ubuntu
 ```bash
