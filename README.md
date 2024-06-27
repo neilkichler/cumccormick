@@ -3,6 +3,37 @@
 CuMcCormick is a CUDA library for McCormick relaxations.
 
 ## Supported Operations
+`neg`
+`add`
+`sub`
+`mul`
+`div`
+`sqr`
+`sqrt`
+`abs`
+`fabs`
+`exp`
+`log`
+`pown`
+`pow`
+`cos`
+
+`max`
+`min`
+`mid`
+`width`
+`hull`
+
+`+`
+`-`
+`*`
+`/`
+`==`
+`!=`
+
+`inf`
+`sup`
+
 
 ## Installation
 > Please make sure that you have installed everything mentioned in the section [Build Requirements](#build-requirements).
