@@ -1026,5 +1026,7 @@ cuda_fn bool operator!=(mc<T> a, mc<T> b)
     return a.cv != b.cv || a.cc != b.cc || a.box != b.box;
 }
 
+#undef cuda_fn
+
 } // namespace cu
 #endif // CUMCCORMICK_ARITHMETIC_BASIC_CUH
