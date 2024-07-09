@@ -21,7 +21,9 @@ using mc = mccormick<T>;
 template<typename T>
 cuda_fn T mid(T v, T lb, T ub)
 {
-    return std::clamp(v, lb, ub);
+    using std::clamp;
+
+    return clamp(v, lb, ub);
 }
 
 template<typename T>
@@ -650,6 +652,7 @@ cuda_fn auto newton_step(root_solver_state<T> state, auto delta_x, auto &&f, aut
 cuda_fn auto halley_step(auto x, auto y, auto &&df, auto &&ddf)
 {
     using std::pow;
+
     return (2.0 * y * df(x)) / (2.0 * pow(df(x), 2) - y * ddf(x));
 }
 
@@ -752,13 +755,15 @@ cuda_fn mc<T> cos(mc<T> x)
     using std::abs;
     using std::cos;
     using std::sin;
+    using std::ceil;
+    using std::floor;
 
     // TODO: use rounded ops
 
     T argmin      = {};
     T argmax      = {};
     T pi          = std::numbers::pi;
-    T k           = std::ceil(-0.5 - inf(x) / (2.0 * pi));
+    T k           = ceil(-0.5 - inf(x) / (2.0 * pi));
     T two_pi_k_lb = 2.0 * pi * k;
     T x_lb        = inf(x);
     T x_ub        = sup(x);
@@ -804,7 +809,7 @@ cuda_fn mc<T> cos(mc<T> x)
     T midcc = mid(argmax, x.cv, x.cc);
 
     auto cv_cos = [x_lb, x_ub, pi](T x_cv, T x_cv_lb, T x_cv_ub) {
-        T k                              = std::ceil(-0.5 - x_cv_lb / (2.0 * pi));
+        T k                              = ceil(-0.5 - x_cv_lb / (2.0 * pi));
         T two_pi_k_lb                    = 2.0 * pi * k;
         auto cv_cos_nonconvex_nonconcave = [](T x, T lb, T ub) {
             // We require that the slope of the connection line is equal to the slope of the
@@ -875,7 +880,7 @@ cuda_fn mc<T> cos(mc<T> x)
                 cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_lb, x_cv_lb_1, x_cv_ub_1);
             }
         } else {
-            T k_upper     = std::floor(0.5 - x_cv_ub / (2.0 * pi));
+            T k_upper     = floor(0.5 - x_cv_ub / (2.0 * pi));
             T two_pi_k_ub = 2.0 * pi * k_upper;
             if (x_cv >= (pi * (-1.0 - 2.0 * k_upper))) {
                 T x_cv_ub_2 = x_cv_ub + two_pi_k_ub;
