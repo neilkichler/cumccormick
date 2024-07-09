@@ -145,11 +145,11 @@ cuda_fn T secant_of_concave(T x, T lb, T ub, F &&f)
     using namespace intrinsic;
 
     // computing secant over interval endpoints
-    T r = lb == ub
+    T slope = lb == ub
         ? static_cast<T>(0)
         : div_down(sub_down(f(ub), f(lb)), (sub_down(ub, lb)));
 
-    return add_down(f(lb), mul_down(r, sub_down(x, lb)));
+    return add_down(f(lb), mul_down(slope, sub_down(x, lb)));
 }
 
 template<typename T, typename F>
@@ -159,11 +159,11 @@ cuda_fn T secant_of_convex(T x, T lb, T ub, F &&f)
     using namespace intrinsic;
 
     // computing secant over interval endpoints
-    T r = lb == ub
+    T slope = lb == ub
         ? static_cast<T>(0)
         : div_up(sub_up(f(ub), f(lb)), (sub_up(ub, lb)));
 
-    return add_up(f(ub), mul_up(r, sub_up(x, ub)));
+    return add_up(f(ub), mul_up(slope, sub_up(x, ub)));
 }
 
 template<typename T>
