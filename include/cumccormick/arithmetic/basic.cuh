@@ -540,7 +540,7 @@ cuda_fn mc<T> operator/(mc<T> a, mc<T> b)
     return div(a, b);
 }
 
-template<std::floating_point T>
+template<typename T>
 struct solver_options
 {
     int maxiter { 50 };
@@ -548,7 +548,7 @@ struct solver_options
     T rtol { 0.0 };
 };
 
-template<std::floating_point T>
+template<typename T>
 struct root_solver_state
 {
     T x;
@@ -599,7 +599,7 @@ cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> option
     return x;
 }
 
-template<std::floating_point T>
+template<typename T>
 cuda_fn auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&step_fn, T epsilon = 1e-30)
 {
     using std::abs;
@@ -672,8 +672,8 @@ cuda_fn auto householder_step(auto x, auto y, auto &&df, auto &&ddf, auto &&dddf
     auto dy   = df(x);
     auto ddy  = ddf(x);
     auto dddy = dddf(x);
-    return (6 * y * pow(dy, 2) - 3 * pow(y, 2) * ddy)
-        / (6 * pow(dy, 3) - 6 * y * dy * ddy + pow(y, 2) * dddy);
+    return (6.0 * y * pow(dy, 2) - 3.0 * pow(y, 2) * ddy)
+        / (6.0 * pow(dy, 3) - 6.0 * y * dy * ddy + pow(y, 2) * dddy);
 }
 
 template<typename T>
@@ -685,21 +685,21 @@ cuda_fn auto householder_step(root_solver_state<T> state, auto delta_x, auto &&f
     return root_solver_state { x, lb, ub, y };
 }
 
-template<std::floating_point T>
+template<typename T>
 cuda_fn auto newton_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df)
 {
     auto step_fn = [df](auto x, auto y) { return newton_step(x, y, df); };
     return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
 }
 
-template<std::floating_point T>
+template<typename T>
 cuda_fn auto halley_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf)
 {
     auto step_fn = [df, ddf](auto x, auto y) { return halley_step(x, y, df, ddf); };
     return derivative_or_bisection_step(state, delta_x, f, df, step_fn);
 }
 
-template<std::floating_point T>
+template<typename T>
 cuda_fn auto householder_bisection_step(root_solver_state<T> state, T delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
 {
     auto step_fn = [df, ddf, dddf](auto x, auto y) { return householder_step(x, y, df, ddf, dddf); };
@@ -753,10 +753,10 @@ cuda_fn mc<T> cos(mc<T> x)
 {
     using namespace intrinsic;
     using std::abs;
-    using std::cos;
-    using std::sin;
     using std::ceil;
+    using std::cos;
     using std::floor;
+    using std::sin;
 
     // TODO: use rounded ops
 
@@ -767,6 +767,7 @@ cuda_fn mc<T> cos(mc<T> x)
     T two_pi_k_lb = 2.0 * pi * k;
     T x_lb        = inf(x);
     T x_ub        = sup(x);
+    T one { 1.0 };
 
     // We center the x around the interval [-pi, pi]
     T x_lb_centered = x_lb + two_pi_k_lb;
@@ -808,10 +809,10 @@ cuda_fn mc<T> cos(mc<T> x)
     T midcv = mid(argmin, x.cv, x.cc);
     T midcc = mid(argmax, x.cv, x.cc);
 
-    auto cv_cos = [x_lb, x_ub, pi](T x_cv, T x_cv_lb, T x_cv_ub) {
+    auto cv_cos = [x_lb, x_ub, pi, one](T x_cv, T x_cv_lb, T x_cv_ub) {
         T k                              = ceil(-0.5 - x_cv_lb / (2.0 * pi));
         T two_pi_k_lb                    = 2.0 * pi * k;
-        auto cv_cos_nonconvex_nonconcave = [](T x, T lb, T ub) {
+        auto cv_cos_nonconvex_nonconcave = [one](T x, T lb, T ub) {
             // We require that the slope of the connection line is equal to the slope of the
             // function, i.e., find point x in [a, b] s.t.
             //
@@ -856,9 +857,9 @@ cuda_fn mc<T> cos(mc<T> x)
             T xj = root_householder_bisection(f, df, ddf, dddf, x0, lb, ub);
 
             if (left && x <= xj || !left && x >= xj) {
-                return next_after(next_after(cos(x), -1.0), -1.0);
+                return next_after(next_after(cos(x), -one), -one);
             } else {
-                return next_after(secant_of_concave(x, xj, xm, [](T x) { return cos(x); }), -1.0);
+                return next_after(secant_of_concave(x, xj, xm, [](T x) { return cos(x); }), -one);
             }
 
             return cos(x);
@@ -871,7 +872,7 @@ cuda_fn mc<T> cos(mc<T> x)
 
             if (x_cv_lb_1 >= 0.5 * pi) {
                 // convex region
-                cv = next_after(cos(x_cv), -1.0); // TODO: might need another rounding here
+                cv = next_after(cos(x_cv), -one); // TODO: might need another rounding here
             } else if (x_cv_lb_1 >= -0.5 * pi && x_cv_ub_1 <= 0.5 * pi) {
                 // concave region
                 cv = secant_of_concave(x_cv, x_cv_lb, x_cv_ub, [](T x) { return cos(x); });
@@ -885,7 +886,7 @@ cuda_fn mc<T> cos(mc<T> x)
             if (x_cv >= (pi * (-1.0 - 2.0 * k_upper))) {
                 T x_cv_ub_2 = x_cv_ub + two_pi_k_ub;
                 if (x_cv_ub_2 <= -0.5 * pi) {
-                    cv = next_after(next_after(next_after(cos(x_cv), -1.0), -1.0), -1.0);
+                    cv = next_after(next_after(next_after(cos(x_cv), -one), -one), -one);
                 } else {
                     // nonconvex and nonconcave region
                     cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_ub,
