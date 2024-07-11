@@ -11,7 +11,7 @@ namespace cu
 template<typename T>
 std::ostream &operator<<(std::ostream &os, cu::mccormick<T> x)
 {
-    return os << "[lb: " << inf(x) << ", (cv: " << x.cv << ", cc: " << x.cc << "), ub: " << sup(x) << "]";
+    return os << "[lb: " << x.box.lb << ", (cv: " << x.cv << ", cc: " << x.cc << "), ub: " << x.box.ub << "]";
 }
 
 } // namespace cu
