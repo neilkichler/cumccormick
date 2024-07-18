@@ -11,6 +11,8 @@ namespace cu
 template<typename T, typename I = cu::interval<T>>
 struct mccormick
 {
+    using value_type = T;
+
     T cv;  // convex underestimation
     T cc;  // concave overestimation
     I box; // interval bounds
