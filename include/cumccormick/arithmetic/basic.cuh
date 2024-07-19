@@ -937,6 +937,87 @@ cuda_fn mc<T> sin(mc<T> x)
 }
 
 template<typename T>
+cuda_fn mc<T> tanh(mc<T> x)
+{
+    using std::tanh;
+
+    constexpr auto zero = static_cast<T>(0);
+
+    T midcv = x.cv;
+    T midcc = x.cc;
+
+    T cv;
+    T cc;
+
+    if (inf(x) >= zero) {
+        // concave region
+        cv = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return tanh(x); });
+        cc = tanh(midcc);
+    } else if (sup(x) <= zero) {
+        // convex region
+        cv = tanh(midcv);
+        cc = secant_of_convex(midcc, inf(x), sup(x), [](T x) { return tanh(x); });
+    } else {
+        // nonconvex and nonconcave region
+
+        // We need to find the point x in [a, b] s.t.
+        //
+        // for cv:
+        //          (f(b) - f(x)) / (b - x) = f'(x)
+        //
+        // for cc:
+        //          (f(x) - f(a)) / (x - a) = f'(x)
+        //
+        // where f(x) = tanh(x) and f'(x) = 1 - tanh(x)^2.
+
+        auto lb    = inf(x);
+        auto ub    = sup(x);
+        auto dtanh = [](T x) { using std::pow; return 1 - pow(tanh(x), 2); };
+
+        {
+            // cv:
+            auto b   = ub;
+            auto f   = [&](T x) { return tanh(b) - tanh(x) - (b - x) * dtanh(x); };
+            auto df  = [&](T x) { return 2.0 * (b - x) * dtanh(x) * tanh(x); };
+            auto ddf = [&](T x) { return 2.0 * dtanh(x) * (tanh(x) * (2.0 * (x - b) * tanh(x) - 1.0) - (x - b) * dtanh(x)); };
+
+            auto x0        = -0.5; // typically a better guess than starting from lb
+            T lb_of_secant = root_halley_bisection(f, df, ddf, x0, lb, 0.0);
+
+            if (midcv <= lb_of_secant) {
+                printf("midcv <= lb_of_secant\n");
+                cv = tanh(midcv);
+            } else {
+                printf("midcv > lb_of_secant\n");
+                cv = secant_of_concave(midcv, lb_of_secant, ub, [](T x) { return tanh(x); });
+            }
+        }
+        {
+            // cc:
+            auto a   = lb;
+            auto f   = [&](T x) { return tanh(x) - tanh(a) - (x - a) * dtanh(x); };
+            auto df  = [&](T x) { return 2.0 * (x - a) * dtanh(x) * tanh(x); };
+            auto ddf = [&](T x) { return 2.0 * dtanh(x) * (tanh(x) * (2.0 * (x - a) * tanh(x) - 1.0) - (x - a) * dtanh(x)); };
+
+            auto x0        = 0.5; // typically a better guess than starting from ub
+            T ub_of_secant = root_halley_bisection(f, df, ddf, x0, 0.0, ub);
+
+            if (midcc > ub_of_secant) {
+                printf("midcc > ub_of_secant\n");
+                cc = tanh(midcc);
+            } else {
+                printf("midcc <= ub_of_secant\n");
+                cc = secant_of_convex(midcc, lb, ub_of_secant, [](T x) { return tanh(x); });
+            }
+        }
+    }
+
+    return { .cv  = cv,
+             .cc  = cc,
+             .box = tanh(x.box) };
+}
+
+template<typename T>
 cuda_fn mc<T> log(mc<T> x)
 {
     using namespace intrinsic;
