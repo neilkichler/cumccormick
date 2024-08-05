@@ -71,6 +71,7 @@ __device__ void check_univariate(mc<T> x, T *interior_samples, int n)
         assert(contains(sqr(x), x_sample * x_sample, x_sample));
         assert(contains(cos(x), cos(x_sample), x_sample));
         // assert(contains(sin(x), sin(x_sample), x_sample));
+        assert(contains(tanh(x), tanh(x_sample), x_sample));
         if (inf(x) >= 0) {
             assert(contains(log(x), log(x_sample), x_sample));
             assert(contains(recip(x), __drcp_rn(x_sample), x_sample));
