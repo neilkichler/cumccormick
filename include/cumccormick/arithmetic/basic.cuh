@@ -981,8 +981,8 @@ cuda_fn mc<T> tanh(mc<T> x)
             auto df  = [&](T x) { return 2.0 * (b - x) * dtanh(x) * tanh(x); };
             auto ddf = [&](T x) { return 2.0 * dtanh(x) * (tanh(x) * (2.0 * (x - b) * tanh(x) - 1.0) - (x - b) * dtanh(x)); };
 
-            auto x0        = -0.5; // typically a better guess than starting from lb
-            T lb_of_secant = root_halley_bisection(f, df, ddf, x0, lb, 0.0);
+            T x0           = -0.5; // typically a better guess than starting from lb
+            T lb_of_secant = root_halley_bisection(f, df, ddf, x0, lb, zero);
 
             if (midcv <= lb_of_secant) {
                 cv = tanh(midcv);
@@ -997,8 +997,8 @@ cuda_fn mc<T> tanh(mc<T> x)
             auto df  = [&](T x) { return 2.0 * (x - a) * dtanh(x) * tanh(x); };
             auto ddf = [&](T x) { return 2.0 * dtanh(x) * (tanh(x) * (2.0 * (x - a) * tanh(x) - 1.0) - (x - a) * dtanh(x)); };
 
-            auto x0        = 0.5; // typically a better guess than starting from ub
-            T ub_of_secant = root_halley_bisection(f, df, ddf, x0, 0.0, ub);
+            T x0           = 0.5; // typically a better guess than starting from ub
+            T ub_of_secant = root_halley_bisection(f, df, ddf, x0, zero, ub);
 
             if (midcc > ub_of_secant) {
                 cc = tanh(midcc);
