@@ -985,10 +985,8 @@ cuda_fn mc<T> tanh(mc<T> x)
             T lb_of_secant = root_halley_bisection(f, df, ddf, x0, lb, 0.0);
 
             if (midcv <= lb_of_secant) {
-                printf("midcv <= lb_of_secant\n");
                 cv = tanh(midcv);
             } else {
-                printf("midcv > lb_of_secant\n");
                 cv = secant_of_concave(midcv, lb_of_secant, ub, [](T x) { return tanh(x); });
             }
         }
@@ -1003,10 +1001,8 @@ cuda_fn mc<T> tanh(mc<T> x)
             T ub_of_secant = root_halley_bisection(f, df, ddf, x0, 0.0, ub);
 
             if (midcc > ub_of_secant) {
-                printf("midcc > ub_of_secant\n");
                 cc = tanh(midcc);
             } else {
-                printf("midcc <= ub_of_secant\n");
                 cc = secant_of_convex(midcc, lb, ub_of_secant, [](T x) { return tanh(x); });
             }
         }
