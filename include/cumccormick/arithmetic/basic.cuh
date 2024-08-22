@@ -27,6 +27,12 @@ cuda_fn T mid(T v, T lb, T ub)
 }
 
 template<typename T>
+cuda_fn mc<T> pos(mc<T> x)
+{
+    return x;
+}
+
+template<typename T>
 cuda_fn mc<T> neg(mc<T> x)
 {
     return { .cv  = -x.cc,
@@ -424,6 +430,12 @@ template<typename T>
 cuda_fn mc<T> pow(mc<T> x, std::integral auto n)
 {
     return pown(x, n);
+}
+
+template<typename T>
+cuda_fn mc<T> operator+(mc<T> x)
+{
+    return x;
 }
 
 template<typename T>
