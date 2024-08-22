@@ -64,6 +64,12 @@ __global__ void basic_kernel()
     print(w);
     auto x = tanh(a);
     print(x);
+    auto y = asin(0.3 * (a - 1.75));
+    print(y);
+    auto z = acos(0.3 * (a - 1.75));
+    print(z);
+    auto aa = atan(a);
+    print(aa);
 }
 
 __global__ void test_pown()
@@ -155,10 +161,16 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         assert(contains(cos(x), cos(x_sample)));
         // assert(contains(sin(x), sin(x_sample)));
         assert(contains(tanh(x), tanh(x_sample)));
+        assert(contains(atan(x), atan(x_sample)));
         if (inf(x) >= 0) {
             assert(contains(log(x), log(x_sample)));
             assert(contains(recip(x), __drcp_rn(x_sample)));
             assert(contains(sqrt(x), sqrt(x_sample)));
+        }
+
+        if (inf(x) >= -1.0 and sup(x) <= 1.0) {
+            assert(contains(asin(x), asin(x_sample)));
+            assert(contains(acos(x), acos(x_sample)));
         }
     }
 }
