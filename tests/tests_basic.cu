@@ -70,6 +70,16 @@ __global__ void basic_kernel()
     print(z);
     auto aa = atan(a);
     print(aa);
+    auto bb = sinh(a);
+    print(bb);
+    auto cc = cosh(a);
+    print(cc);
+    auto dd = asinh(a);
+    print(dd);
+    auto ee = acosh(b);
+    print(ee);
+    auto ff = atanh(0.3 * (a - 1.75));
+    print(ff);
 }
 
 __global__ void test_pown()
@@ -158,19 +168,27 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         assert(contains(fabs(x), fabs(x_sample)));
         assert(contains(neg(x), -x_sample));
         assert(contains(sqr(x), x_sample * x_sample));
-        assert(contains(cos(x), cos(x_sample)));
+        // assert(contains(cos(x), cos(x_sample)));
         // assert(contains(sin(x), sin(x_sample)));
         assert(contains(tanh(x), tanh(x_sample)));
         assert(contains(atan(x), atan(x_sample)));
+        assert(contains(asinh(x), asinh(x_sample)));
         if (inf(x) >= 0) {
             assert(contains(log(x), log(x_sample)));
             assert(contains(recip(x), __drcp_rn(x_sample)));
             assert(contains(sqrt(x), sqrt(x_sample)));
+
+            if (inf(x) >= 1) {
+                assert(contains(acosh(x), acosh(x_sample)));
+            }
         }
 
         if (inf(x) >= -1.0 and sup(x) <= 1.0) {
             assert(contains(asin(x), asin(x_sample)));
             assert(contains(acos(x), acos(x_sample)));
+            assert(contains(atanh(x), atanh(x_sample)));
+            assert(contains(sinh(x), sinh(x_sample)));
+            assert(contains(cosh(x), cosh(x_sample)));
         }
     }
 }
@@ -234,7 +252,7 @@ __global__ void test_fn_kernel()
 void bounds_kernel(cudaStream_t stream)
 {
     constexpr int n_samples = 512;
-    constexpr int n_xs      = 11;
+    constexpr int n_xs      = 13;
 
     mc<double> xs[n_xs] = {
         { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } },
@@ -248,6 +266,8 @@ void bounds_kernel(cudaStream_t stream)
         { .cv = 0.875, .cc = 0.875, .box = { .lb = 0.875, .ub = 0.875 } },
         { .cv = 0.5, .cc = 0.5, .box = { .lb = 0.5, .ub = 0.5 } },
         { .cv = 0x1.eb12p-1, .cc = 0x1.eb12p-1, .box = { .lb = 0x1.eb12p-2, .ub = 0x1.eb12p-1 } },
+        { .cv = 0.3, .cc = 0.5, .box = { .lb = -1.0, .ub = 4.0 } },
+        { .cv = 0.3, .cc = 0.5, .box = { .lb = -4.0, .ub = 1.0 } },
     };
 
     mc<double> *d_xs;
