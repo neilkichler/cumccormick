@@ -141,35 +141,30 @@ cuda_fn mc<T> mul(mc<T> a, mc<T> b)
              .box = mul(a.box, b.box) };
 }
 
-template<typename T, typename F>
-cuda_fn T secant_of_concave(T x, T lb, T ub, F &&f)
+template<typename T>
+cuda_fn T secant_of_concave(T x, T lb, T ub, T f_lb, T f_ub)
 {
-    // TODO: We could also just pass in the f(ub) and f(lb)
-    //       and not the function.
-
-    // TODO: Does not consider rounding of f
     using namespace intrinsic;
 
     // computing secant over interval endpoints
     T slope = lb == ub
         ? static_cast<T>(0)
-        : div_down(sub_down(f(ub), f(lb)), (sub_down(ub, lb)));
+        : div_down(sub_down(f_ub, f_lb), (sub_down(ub, lb)));
 
-    return add_down(f(lb), mul_down(slope, sub_down(x, lb)));
+    return add_down(f_lb, mul_down(slope, sub_down(x, lb)));
 }
 
-template<typename T, typename F>
-cuda_fn T secant_of_convex(T x, T lb, T ub, F &&f)
+template<typename T>
+cuda_fn T secant_of_convex(T x, T lb, T ub, T f_lb, T f_ub)
 {
-    // TODO: Does not consider rounding of f
     using namespace intrinsic;
 
     // computing secant over interval endpoints
     T slope = lb == ub
         ? static_cast<T>(0)
-        : div_up(sub_up(f(ub), f(lb)), (sub_up(ub, lb)));
+        : div_up(sub_up(f_ub, f_lb), (sub_up(ub, lb)));
 
-    return add_up(f(ub), mul_up(slope, sub_up(x, ub)));
+    return add_up(f_ub, mul_up(slope, sub_up(x, ub)));
 }
 
 template<typename T>
@@ -203,11 +198,11 @@ cuda_fn mc<T> recip(mc<T> x)
         }
     } else if (sup(x) < zero) {
         // for x < 0, recip is concave
-        cv = secant_of_concave(midcv, inf(x), sup(x), rcp_down<T>);
+        cv = secant_of_concave(midcv, inf(x), sup(x), rcp_down(inf(x)), rcp_up(sup(x)));
         cc = rcp_up(midcc);
     } else { // inf(x) > zero
         // for x > 0, recip is convex
-        cc = secant_of_convex(midcc, inf(x), sup(x), rcp_up<T>);
+        cc = secant_of_convex(midcc, inf(x), sup(x), rcp_down(inf(x)), rcp_up(sup(x)));
         cv = rcp_down(midcv);
     }
 
@@ -220,9 +215,12 @@ cuda_fn mc<T> recip(mc<T> x)
 template<typename T>
 cuda_fn mc<T> div(mc<T> a, T b)
 {
+    using namespace intrinsic;
+
     bool is_neg = b < static_cast<T>(0);
-    return { .cv  = intrinsic::div_down(is_neg ? a.cc : a.cv, b),
-             .cc  = intrinsic::div_up(is_neg ? a.cv : a.cc, b),
+
+    return { .cv  = div_down(is_neg ? a.cc : a.cv, b),
+             .cc  = div_up(is_neg ? a.cv : a.cc, b),
              .box = a.box / b };
 }
 
@@ -284,7 +282,7 @@ cuda_fn mc<T> abs(mc<T> x)
     T xmax  = abs(inf(x)) >= abs(sup(x)) ? inf(x) : sup(x);
     T midcc = mid(xmax, x.cv, x.cc);
 
-    T cc = secant_of_convex(midcc, inf(x), sup(x), [](T x) { return abs(x); });
+    T cc = secant_of_convex(midcc, inf(x), sup(x), abs(inf(x)), abs(sup(x)));
     return { .cv  = abs(midcv),
              .cc  = cc,
              .box = abs(x.box) };
@@ -305,7 +303,7 @@ cuda_fn mc<T> exp(mc<T> x)
     // TODO: error in exp not accounted for in secant computation
     T cc = exp(sup(x)) == intrinsic::pos_inf<T>()
         ? intrinsic::pos_inf<T>()
-        : secant_of_convex(x.cc, inf(x), sup(x), [](T x) { return exp(x); });
+        : secant_of_convex(x.cc, inf(x), sup(x), exp(inf(x)), exp(sup(x)));
 
     return { .cv  = next_after(exp(x.cv), static_cast<T>(0)),
              .cc  = cc,
@@ -318,10 +316,10 @@ cuda_fn mc<T> sqrt(mc<T> x)
     using namespace intrinsic;
     T midcv = mid(inf(x), x.cv, x.cc);
     T midcc = mid(sup(x), x.cv, x.cc);
-    T cv    = secant_of_concave(midcv, inf(x), sup(x), [](T x) { using std::sqrt; return sqrt(x); });
+    T cv    = secant_of_concave(midcv, inf(x), sup(x), sqrt_down(inf(x)), sqrt_up(sup(x)));
 
     return { .cv  = cv,
-             .cc  = intrinsic::sqrt_up(midcc),
+             .cc  = sqrt_up(midcc),
              .box = sqrt(x.box) };
 }
 
@@ -365,7 +363,7 @@ cuda_fn mc<T> pown_even(mc<T> x, std::integral auto n)
     }
 
     // TODO: floating point error in pow not accounted for
-    cc = secant_of_convex(midcc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+    cc = secant_of_convex(midcc, inf(x), sup(x), pow(inf(x), n), pow(sup(x), n));
 
     return { .cv  = pow(midcv, n),
              .cc  = cc,
@@ -399,12 +397,12 @@ cuda_fn mc<T> pown(mc<T> x, std::integral auto n)
         // TODO: not accounting for pow(x,n) error (2 ulps)
         if (sup(x) <= zero) {
             // for x < 0, pown(x,n_odd) is concave
-            cv = secant_of_concave(n > 0 ? x.cv : x.cc, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            cv = secant_of_concave(n > 0 ? x.cv : x.cc, inf(x), sup(x), pow(inf(x), n), pow(sup(x), n));
             cc = pow(n > 0 ? x.cc : x.cv, n);
         } else if (inf(x) >= zero) {
             // for x > 0, pown(x,n_odd) is convex
             cv = pow(n > 0 ? x.cv : x.cc, n);
-            cc = secant_of_convex(n > 0 ? x.cc : x.cv, inf(x), sup(x), [n](T x) { return pow(x, n); });
+            cc = secant_of_convex(n > 0 ? x.cc : x.cv, inf(x), sup(x), pow(inf(x), n), pow(sup(x), n));
         } else {
             // for 0 in x, pown(x,n_odd) is concavoconvex
             if (n > 0) {
@@ -871,7 +869,7 @@ cuda_fn mc<T> cos(mc<T> x)
             if (left && x <= xj || !left && x >= xj) {
                 return next_after(next_after(cos(x), -one), -one);
             } else {
-                return next_after(secant_of_concave(x, xj, xm, [](T x) { return cos(x); }), -one);
+                return next_after(secant_of_concave(x, xj, xm, cos(xj), cos(xm)), -one);
             }
 
             return cos(x);
@@ -887,7 +885,7 @@ cuda_fn mc<T> cos(mc<T> x)
                 cv = next_after(cos(x_cv), -one); // TODO: might need another rounding here
             } else if (x_cv_lb_1 >= -0.5 * pi && x_cv_ub_1 <= 0.5 * pi) {
                 // concave region
-                cv = secant_of_concave(x_cv, x_cv_lb, x_cv_ub, [](T x) { return cos(x); });
+                cv = secant_of_concave(x_cv, x_cv_lb, x_cv_ub, cos(x_cv_lb), cos(x_cv_ub));
             } else {
                 // nonconvex and nonconcave region
                 cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_lb, x_cv_lb_1, x_cv_ub_1);
@@ -961,14 +959,17 @@ cuda_fn mc<T> tanh(mc<T> x)
     T cv;
     T cc;
 
-    if (inf(x) >= zero) {
+    auto lb = inf(x);
+    auto ub = sup(x);
+
+    if (lb >= zero) {
         // concave region
-        cv = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return tanh(x); });
+        cv = secant_of_concave(midcv, lb, ub, tanh(lb), tanh(ub));
         cc = tanh(midcc);
-    } else if (sup(x) <= zero) {
+    } else if (ub <= zero) {
         // convex region
         cv = tanh(midcv);
-        cc = secant_of_convex(midcc, inf(x), sup(x), [](T x) { return tanh(x); });
+        cc = secant_of_convex(midcc, lb, ub, tanh(lb), tanh(ub));
     } else {
         // nonconvex and nonconcave region
 
@@ -982,8 +983,6 @@ cuda_fn mc<T> tanh(mc<T> x)
         //
         // where f(x) = tanh(x) and f'(x) = 1 - tanh(x)^2.
 
-        auto lb    = inf(x);
-        auto ub    = sup(x);
         auto dtanh = [](T x) { using std::pow; return 1 - pow(tanh(x), 2); };
 
         {
@@ -999,7 +998,7 @@ cuda_fn mc<T> tanh(mc<T> x)
             if (midcv <= lb_of_secant) {
                 cv = tanh(midcv);
             } else {
-                cv = secant_of_concave(midcv, lb_of_secant, ub, [](T x) { return tanh(x); });
+                cv = secant_of_concave(midcv, lb_of_secant, ub, tanh(lb_of_secant), tanh(ub));
             }
         }
         {
@@ -1015,7 +1014,7 @@ cuda_fn mc<T> tanh(mc<T> x)
             if (midcc > ub_of_secant) {
                 cc = tanh(midcc);
             } else {
-                cc = secant_of_convex(midcc, lb, ub_of_secant, [](T x) { return tanh(x); });
+                cc = secant_of_convex(midcc, lb, ub_of_secant, tanh(lb), tanh(ub_of_secant));
             }
         }
     }
@@ -1039,13 +1038,16 @@ cuda_fn mc<T> asin(mc<T> x)
     T cv;
     T cc;
 
-    if (inf(x) >= zero) {
+    auto lb = inf(x);
+    auto ub = sup(x);
+
+    if (lb >= zero) {
         // convex region
         cv = asin(midcv);
-        cc = secant_of_convex(midcc, inf(x), sup(x), [](T x) { return asin(x); });
-    } else if (sup(x) <= zero) {
+        cc = secant_of_convex(midcc, lb, ub, asin(lb), asin(ub));
+    } else if (ub <= zero) {
         // concave region
-        cv = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return asin(x); });
+        cv = secant_of_concave(midcv, lb, ub, asin(lb), asin(ub));
         cc = asin(midcc);
     } else {
         // nonconvex and nonconcave region
@@ -1060,8 +1062,6 @@ cuda_fn mc<T> asin(mc<T> x)
         //
         // where f(x) = asin(x) and f'(x) = 1 / sqrt(1 - x^2).
 
-        auto lb    = inf(x);
-        auto ub    = sup(x);
         auto dasin = [](T x) { using std::sqrt; using std::pow; return 1 / sqrt(1 - pow(x, 2)); };
 
         {
@@ -1077,7 +1077,7 @@ cuda_fn mc<T> asin(mc<T> x)
             if (midcv >= ub_of_secant) {
                 cv = asin(midcv);
             } else {
-                cv = secant_of_concave(midcv, lb, ub_of_secant, [](T x) { return asin(x); });
+                cv = secant_of_concave(midcv, lb, ub_of_secant, asin(lb), asin(ub_of_secant));
             }
         }
         {
@@ -1093,7 +1093,7 @@ cuda_fn mc<T> asin(mc<T> x)
             if (midcc < lb_of_secant) {
                 cc = asin(midcc);
             } else {
-                cc = secant_of_convex(midcc, lb_of_secant, ub, [](T x) { return asin(x); });
+                cc = secant_of_convex(midcc, lb_of_secant, ub, asin(lb_of_secant), asin(ub));
             }
         }
     }
@@ -1126,14 +1126,17 @@ cuda_fn mc<T> atan(mc<T> x)
     T cv;
     T cc;
 
-    if (inf(x) >= zero) {
+    auto lb = inf(x);
+    auto ub = sup(x);
+
+    if (lb >= zero) {
         // concave region
-        cv = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return atan(x); });
+        cv = secant_of_concave(midcv, lb, ub, atan(lb), atan(ub));
         cc = atan(midcc);
-    } else if (sup(x) <= zero) {
+    } else if (ub <= zero) {
         // convex region
         cv = atan(midcv);
-        cc = secant_of_convex(midcc, inf(x), sup(x), [](T x) { return atan(x); });
+        cc = secant_of_convex(midcc, lb, ub, atan(lb), atan(ub));
     } else {
         // nonconvex and nonconcave region
 
@@ -1147,8 +1150,6 @@ cuda_fn mc<T> atan(mc<T> x)
         //
         // where f(x) = atan(x) and f'(x) = 1 / (x^2 + 1).
 
-        auto lb    = inf(x);
-        auto ub    = sup(x);
         auto datan = [](T x) { using std::pow; return 1.0 / (pow(x, 2) + 1.0); };
 
         {
@@ -1164,7 +1165,7 @@ cuda_fn mc<T> atan(mc<T> x)
             if (midcv <= lb_of_secant) {
                 cv = atan(midcv);
             } else {
-                cv = secant_of_concave(midcv, lb_of_secant, ub, [](T x) { return atan(x); });
+                cv = secant_of_concave(midcv, lb_of_secant, ub, atan(lb_of_secant), atan(ub));
             }
         }
         {
@@ -1180,7 +1181,7 @@ cuda_fn mc<T> atan(mc<T> x)
             if (midcc > ub_of_secant) {
                 cc = atan(midcc);
             } else {
-                cc = secant_of_convex(midcc, lb, ub_of_secant, [](T x) { return atan(x); });
+                cc = secant_of_convex(midcc, lb, ub_of_secant, atan(lb), atan(ub_of_secant));
             }
         }
     }
@@ -1205,7 +1206,7 @@ cuda_fn mc<T> log(mc<T> x)
     T midcc = x.cc;
 
     // TODO: error in log not accounted for
-    T cv = secant_of_concave(midcv, inf(x), sup(x), [](T x) { return log(x); });
+    T cv = secant_of_concave(midcv, inf(x), sup(x), log(inf(x)), log(sup(x)));
 
     if (inf(x) <= static_cast<T>(0)) {
         cv = neg_inf<T>();
