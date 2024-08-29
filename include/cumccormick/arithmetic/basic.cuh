@@ -144,9 +144,9 @@ cuda_fn mc<T> mul(mc<T> a, mc<T> b)
 template<typename T>
 cuda_fn T chord_of_concave(T x, T lb, T ub, T f_lb, T f_ub)
 {
+    // computing chord (line segment) over interval endpoints
     using namespace intrinsic;
 
-    // computing secant over interval endpoints
     T slope = lb == ub
         ? static_cast<T>(0)
         : div_down(sub_down(f_ub, f_lb), (sub_down(ub, lb)));
@@ -157,9 +157,9 @@ cuda_fn T chord_of_concave(T x, T lb, T ub, T f_lb, T f_ub)
 template<typename T>
 cuda_fn T chord_of_convex(T x, T lb, T ub, T f_lb, T f_ub)
 {
+    // computing chord (line segment) over interval endpoints
     using namespace intrinsic;
 
-    // computing secant over interval endpoints
     T slope = lb == ub
         ? static_cast<T>(0)
         : div_up(sub_up(f_ub, f_lb), (sub_up(ub, lb)));
