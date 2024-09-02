@@ -437,6 +437,13 @@ cuda_fn mc<T> operator+(mc<T> x)
 }
 
 template<typename T>
+cuda_fn mc<T> &operator+=(mc<T> &a, auto b)
+{
+    a = add(a, b);
+    return a;
+}
+
+template<typename T>
 cuda_fn mc<T> operator+(mc<T> a, mc<T> b)
 {
     return add(a, b);
