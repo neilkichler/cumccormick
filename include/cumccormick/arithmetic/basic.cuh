@@ -1511,6 +1511,90 @@ cuda_fn mc<T> log(mc<T> x)
 }
 
 template<typename T>
+cuda_fn mc<T> erf(mc<T> x)
+{
+    using std::erf;
+    using std::sqrt;
+
+    constexpr auto zero = static_cast<T>(0);
+
+    T midcv = x.cv;
+    T midcc = x.cc;
+
+    T cv;
+    T cc;
+
+    auto lb = inf(x);
+    auto ub = sup(x);
+
+    if (lb >= zero) {
+        // concave region
+        cv = chord_of_concave(midcv, lb, ub, erf(lb), erf(ub));
+        cc = erf(midcc);
+    } else if (ub <= zero) {
+        // convex region
+        cv = erf(midcv);
+        cc = chord_of_convex(midcc, lb, ub, erf(lb), erf(ub));
+    } else {
+        // nonconvex and nonconcave region
+
+        // We need to find the point x in [a, b] s.t.
+        //
+        // for cv:
+        //          (f(b) - f(x)) / (b - x) = f'(x)
+        //
+        // for cc:
+        //          (f(x) - f(a)) / (x - a) = f'(x)
+        //
+        // where f(x) = erf(x) and f'(x) = 2 / sqrt(pi) * exp(-x^2)
+
+        auto derf = [](T x) {
+            using std::sqrt;
+            using std::exp;
+            using std::pow;
+            return 2 * exp(-pow(x, 2)) / sqrt(std::numbers::pi);
+        };
+
+        {
+            // cv:
+            auto b   = ub;
+            auto f   = [&](T x) { return erf(b) - erf(x) + (x - b) * derf(x); };
+            auto df  = [&](T x) { return -2 * x * (x - b) * derf(x); };
+            auto ddf = [&](T x) { return (8 * pow(x, 3) - 8 * b * pow(x, 2) - 8 * x + 4 * b) * exp(-pow(x, 2)) / sqrt(std::numbers::pi); };
+
+            T x0           = lb;
+            T lb_of_secant = root_halley_bisection(f, df, ddf, x0, lb, zero);
+
+            if (midcv <= lb_of_secant) {
+                cv = erf(midcv);
+            } else {
+                cv = chord_of_concave(midcv, lb_of_secant, ub, erf(lb_of_secant), erf(ub));
+            }
+        }
+        {
+            // cc:
+            auto a   = lb;
+            auto f   = [&](T x) { return erf(x) - erf(a) + (a - x) * derf(x); };
+            auto df  = [&](T x) { return 2 * x * (x - a) * derf(x); };
+            auto ddf = [&](T x) { return (8 * pow(x, 3) - 8 * a * pow(x, 2) - 8 * x + 4 * a) * exp(-pow(x, 2)) / sqrt(std::numbers::pi); };
+
+            T x0           = ub;
+            T ub_of_secant = root_halley_bisection(f, df, ddf, x0, zero, ub);
+
+            if (midcc > ub_of_secant) {
+                cc = erf(midcc);
+            } else {
+                cc = chord_of_convex(midcc, lb, ub_of_secant, erf(lb), erf(ub_of_secant));
+            }
+        }
+    }
+
+    return { .cv  = cv,
+             .cc  = cc,
+             .box = erf(x.box) };
+}
+
+template<typename T>
 cuda_fn mc<T> max(mc<T> a, mc<T> b)
 {
     using std::max;
