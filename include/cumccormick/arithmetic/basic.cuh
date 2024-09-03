@@ -1595,6 +1595,14 @@ cuda_fn mc<T> erf(mc<T> x)
 }
 
 template<typename T>
+cuda_fn mc<T> erfc(mc<T> x)
+{
+    using std::erfc;
+
+    return 1.0 - erf(x);
+}
+
+template<typename T>
 cuda_fn mc<T> max(mc<T> a, mc<T> b)
 {
     using std::max;
