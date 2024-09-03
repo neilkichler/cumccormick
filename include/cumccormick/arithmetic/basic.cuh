@@ -1514,6 +1514,8 @@ template<typename T>
 cuda_fn mc<T> erf(mc<T> x)
 {
     using std::erf;
+    using std::exp;
+    using std::pow;
     using std::sqrt;
 
     constexpr auto zero = static_cast<T>(0);
