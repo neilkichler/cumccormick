@@ -1674,6 +1674,18 @@ cuda_fn bool operator!=(mc<T> a, mc<T> b)
     return a.cv != b.cv || a.cc != b.cc || a.box != b.box;
 }
 
+template<typename T>
+cuda_fn bool operator>(mc<T> a, auto b)
+{
+    return a.box.lb > b;
+}
+
+template<typename T>
+cuda_fn bool operator<(mc<T> a, auto b)
+{
+    return a.box.ub < b;
+}
+
 #undef cuda_fn
 
 } // namespace cu
