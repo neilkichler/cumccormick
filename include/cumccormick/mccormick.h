@@ -18,6 +18,14 @@ struct mccormick
     I box; // interval bounds
 
     constexpr auto operator<=>(const mccormick &) const = default;
+
+    mccormick &operator=(T value)
+    {
+        cv  = value;
+        cc  = value;
+        box = { value, value };
+        return *this;
+    }
 };
 
 } // namespace cu
