@@ -1,9 +1,7 @@
 #ifndef CUMCCORMICK_ARITHMETIC_BASIC_CUH
 #define CUMCCORMICK_ARITHMETIC_BASIC_CUH
 
-#include <cuinterval/arithmetic/basic.cuh>
-#include <cuinterval/arithmetic/intrinsic.cuh>
-
+#include <cuinterval/cuinterval.h>
 #include <cumccormick/mccormick.h>
 
 #include <algorithm>
