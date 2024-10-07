@@ -28,7 +28,7 @@ jobs:
   linux-gpu:
     runs-on: [self-hosted,Linux]
     steps:
-      - name: WSL keep alive
+      - name: Linux keep alive
         run: echo "Keep alive"
       - name: GPU info
         run: nvidia-smi
