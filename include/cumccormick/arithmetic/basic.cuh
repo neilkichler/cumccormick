@@ -1660,42 +1660,6 @@ cuda_fn mc<T> hull(mc<T> a, mc<T> b)
              .box = convex_hull(a.box, b.box) };
 }
 
-template<typename T>
-cuda_fn bool operator==(mc<T> a, mc<T> b)
-{
-    return a.cv == b.cv && a.cc == b.cc && a.box == b.box;
-}
-
-template<typename T>
-cuda_fn bool operator!=(mc<T> a, mc<T> b)
-{
-    return a.cv != b.cv || a.cc != b.cc || a.box != b.box;
-}
-
-template<typename T>
-cuda_fn bool operator>(mc<T> a, auto b)
-{
-    return a.box.lb > b;
-}
-
-template<typename T>
-cuda_fn bool operator<(mc<T> a, auto b)
-{
-    return a.box.ub < b;
-}
-
-template<typename T>
-cuda_fn bool operator>=(mc<T> a, mc<T> b)
-{
-    return inf(a) >= sup(b);
-}
-
-template<typename T>
-cuda_fn bool operator<=(mc<T> a, mc<T> b)
-{
-    return inf(b) >= sup(a);
-}
-
 #undef cuda_fn
 
 } // namespace cu
