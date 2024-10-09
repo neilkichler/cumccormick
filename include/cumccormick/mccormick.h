@@ -3,8 +3,6 @@
 
 #include <cuinterval/interval.h>
 
-#include <compare>
-
 namespace cu
 {
 
@@ -17,7 +15,7 @@ struct mccormick
     T cc;  // concave overestimation
     I box; // interval bounds
 
-    constexpr auto operator<=>(const mccormick &) const = default;
+    constexpr bool operator==(const mccormick &) const = default;
 
     mccormick &operator=(T value)
     {
