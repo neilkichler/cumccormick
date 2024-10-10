@@ -7,8 +7,9 @@
 #include <cumccormick/cumccormick.cuh>
 #include <cumccormick/format.h>
 
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <numbers>
 
 template<typename T>
 using mc = cu::mccormick<T>;
@@ -39,7 +40,7 @@ constexpr auto call(parameters<T> params)
 
     auto normcdf = [](auto x) {
         using std::erfc;
-        return 0.5 * erfc(-x * M_SQRT1_2);
+        return 0.5 * erfc(-x * 1.0 / std::numbers::sqrt2);
     };
 
     auto discount_factor = exp(-r * tau);
