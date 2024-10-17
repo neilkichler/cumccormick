@@ -128,11 +128,18 @@ cuda_fn mc<T> mul(mc<T> a, mc<T> b)
     T delta1 = max(mul_up(sup(b), a.cv), mul_up(sup(b), a.cc));
     T gamma2 = max(mul_up(sup(a), b.cv), mul_up(sup(a), b.cc));
 
-    T cv = max(sub_down(add_down(alpha1, alpha2), mul_down(inf(a), inf(b))),
-               sub_down(add_down(beta1, beta2), mul_down(sup(a), sup(b))));
+    // T cv = max(sub_down(add_down(alpha1, alpha2), mul_down(inf(a), inf(b))),
+    //            sub_down(add_down(beta1, beta2), mul_down(sup(a), sup(b))));
+    //
+    // T cc = min(sub_up(add_up(gamma1, gamma2), mul_up(sup(a), inf(b))),
+    //            sub_up(add_up(delta1, delta2), mul_up(inf(a), sup(b))));
+    //
+    // using fmas we have:
+    T cv = max(fma_down(-inf(a), inf(b), add_down(alpha1, alpha2)),
+               fma_down(-sup(a), sup(b), add_down(beta1, beta2)));
 
-    T cc = min(sub_up(add_up(gamma1, gamma2), mul_up(sup(a), inf(b))),
-               sub_up(add_up(delta1, delta2), mul_up(inf(a), sup(b))));
+    T cc = min(fma_up(-sup(a), inf(b), add_up(gamma1, gamma2)),
+               fma_up(-inf(a), sup(b), add_up(delta1, delta2)));
 
     return { .cv  = cv,
              .cc  = cc,
