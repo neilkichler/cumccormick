@@ -541,7 +541,7 @@ cuda_fn mc<T> operator*(mc<T> a, std::integral auto b)
 template<typename T>
 cuda_fn mc<T> operator*(mc<T> a, mc<T> b)
 {
-    return mul(b, a);
+    return mul(a, b);
 }
 
 template<typename T>
