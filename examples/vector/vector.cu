@@ -27,7 +27,7 @@ fn model(auto x, auto y)
     return z;
 }
 
-__global__ void generic_kernel(auto &&f, mc<double> *xs, mc<double> *ys, mc<double> *res, int n)
+__global__ void generic_kernel(auto &&f, mc<double> *xs, mc<double> *ys, mc<double> *res, auto n)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -43,10 +43,10 @@ void launch(auto &&user_kernel, std::span<mc<T>> xs, std::span<mc<T>> ys)
     mc<T> *d_ys;
     mc<T> *d_res;
 
-    const int n        = xs.size();
-    const int xs_size  = xs.size_bytes();
-    const int ys_size  = ys.size_bytes();
-    const int res_size = xs_size;
+    auto n        = xs.size();
+    auto xs_size  = xs.size_bytes();
+    auto ys_size  = ys.size_bytes();
+    auto res_size = xs_size;
 
     CUDA_CHECK(cudaMalloc(&d_xs, xs_size));
     CUDA_CHECK(cudaMalloc(&d_ys, ys_size));
