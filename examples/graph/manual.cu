@@ -74,7 +74,6 @@ cudaGraph_t construct_graph(cuda_ctx &ctx, mc<T> *xs, mc<T> *ys, mc<T> *res, mc<
     auto v1 = d_ys;
 
     cudaGraph_t graph;
-    cudaStream_t g_stream = ctx.streams[0];
 
     CUDA_CHECK(cudaGraphCreate(&graph, 0));
 
