@@ -82,7 +82,7 @@ __global__ void basic_kernel()
     print(ff);
 }
 
-__global__ void test_pown()
+__global__ void pown_kernel()
 {
     mc<double> a { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
 
@@ -249,7 +249,7 @@ __global__ void test_fn_kernel()
     // printf("ack.cc: %a, %.15f\n", ack.cc, ack.cc);
 }
 
-void bounds_kernel(cudaStream_t stream)
+void test_bounds([[maybe_unused]] cudaStream_t stream)
 {
     constexpr int n_samples = 512;
     constexpr int n_xs      = 13;
@@ -293,17 +293,17 @@ void bounds_kernel(cudaStream_t stream)
     CUDA_CHECK(cudaFree(d_ys));
 }
 
-void basic_kernel(cudaStream_t stream)
+void test_basic(cudaStream_t stream)
 {
     basic_kernel<<<1, 1, 0, stream>>>();
 }
 
-void pown_kernel(cudaStream_t stream)
+void test_pown(cudaStream_t stream)
 {
-    test_pown<<<1, 1, 0, stream>>>();
+    pown_kernel<<<1, 1, 0, stream>>>();
 }
 
-void fn_kernel(cudaStream_t stream)
+void test_fn(cudaStream_t stream)
 {
     test_fn_kernel<<<1, 1, 0, stream>>>();
 }

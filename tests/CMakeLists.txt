@@ -12,7 +12,6 @@ FetchContent_MakeAvailable(ut)
 # Tests need to be added as executables first
 add_executable(tests 
     tests.cpp
-    tests_basic.cpp
     tests_basic.cu
     tests_basic.h
     tests_root.cu

@@ -2,5 +2,5 @@
 
 #include <cuda_runtime.h>
 
-void tests_root(cudaStream_t stream, cudaEvent_t event);
+void test_root(cudaStream_t stream);
 

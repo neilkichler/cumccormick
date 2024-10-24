@@ -144,7 +144,7 @@ __global__ void generate_and_check(rng_state *state, int n, u64 offset)
     }
 }
 
-void tests_randomized(cuda_streams streams, cuda_events events)
+void tests_randomized(cuda_streams streams)
 {
 
     rng_state *states;
@@ -171,7 +171,7 @@ void tests_randomized(cuda_streams streams, cuda_events events)
     setup_randomized_kernel<<<BLOCK_COUNT, THREADS_PER_BLOCK, 0, streams[0]>>>(d_directions, d_scrambled_constants, states);
     cudaStreamSynchronize(streams[0]);
 
-    for (int i = 0; i < n_iterations; i++) {
+    for (u64 i = 0; i < n_iterations; i++) {
         u64 offset = i * (n_dims * TOTAL_THREADS);
         generate_and_check<<<BLOCK_COUNT, THREADS_PER_BLOCK, 0, streams[i % streams.size()]>>>(states, n_samples, offset);
     }

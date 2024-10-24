@@ -112,7 +112,7 @@ __global__ void root_kernel()
     }
 }
 
-void tests_root(cudaStream_t stream, cudaEvent_t event)
+void test_root(cudaStream_t stream)
 {
     root_kernel<<<1, 1, 0, stream>>>();
 }
