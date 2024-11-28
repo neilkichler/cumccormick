@@ -17,7 +17,7 @@ struct mccormick
 
     constexpr bool operator==(const mccormick &) const = default;
 
-    mccormick &operator=(T value)
+    constexpr mccormick &operator=(T value)
     {
         cv  = value;
         cc  = value;
