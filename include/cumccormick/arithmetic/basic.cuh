@@ -914,7 +914,7 @@ cuda_fn mc<T> cos(mc<T> x)
                 } else {
                     // nonconvex and nonconcave region
                     cv = cv_cos_nonconvex_nonconcave(x_cv + two_pi_k_ub,
-                                                     max(two_pi_k_ub, -pi), x_cv_ub_2);
+                                                     max(x_cv_lb + two_pi_k_ub, -pi), x_cv_ub_2);
                 }
             } else {
                 cv = -1.0;
