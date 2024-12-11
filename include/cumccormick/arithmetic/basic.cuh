@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <type_traits>
 #include <numbers>
 
 namespace cu
@@ -13,6 +14,9 @@ namespace cu
 
 template<typename T>
 using mc = mccormick<T>;
+
+template <typename T>
+concept Number = std::is_arithmetic_v<T>;
 
 #define cuda_fn inline constexpr __device__
 
@@ -329,7 +333,7 @@ cuda_fn mc<T> sqrt(mc<T> x)
 }
 
 template<typename T>
-cuda_fn mc<T> pown_even(mc<T> x, std::integral auto n)
+cuda_fn mc<T> pown_even(mc<T> x, Number auto n)
 {
     using namespace intrinsic;
     using std::abs;
@@ -376,7 +380,7 @@ cuda_fn mc<T> pown_even(mc<T> x, std::integral auto n)
 }
 
 template<typename T>
-cuda_fn mc<T> pown(mc<T> x, std::integral auto n)
+cuda_fn mc<T> pown(mc<T> x, Number auto n)
 {
     using namespace intrinsic;
     using std::pow;
@@ -430,7 +434,7 @@ cuda_fn mc<T> pown(mc<T> x, std::integral auto n)
 }
 
 template<typename T>
-cuda_fn mc<T> pow(mc<T> x, std::integral auto n)
+cuda_fn mc<T> pow(mc<T> x, Number auto n)
 {
     return pown(x, n);
 }
@@ -461,7 +465,7 @@ cuda_fn mc<T> operator+(T a, mc<T> b)
 }
 
 template<typename T>
-cuda_fn mc<T> operator+(std::integral auto a, mc<T> b)
+cuda_fn mc<T> operator+(Number auto a, mc<T> b)
 {
     return add(static_cast<T>(a), b);
 }
@@ -473,7 +477,7 @@ cuda_fn mc<T> operator+(mc<T> a, T b)
 }
 
 template<typename T>
-cuda_fn mc<T> operator+(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator+(mc<T> a, Number auto b)
 {
     return add(static_cast<T>(b), a);
 }
@@ -497,7 +501,7 @@ cuda_fn mc<T> operator-(T a, mc<T> b)
 }
 
 template<typename T>
-cuda_fn mc<T> operator-(std::integral auto a, mc<T> b)
+cuda_fn mc<T> operator-(Number auto a, mc<T> b)
 {
     return sub(static_cast<T>(a), b);
 }
@@ -509,7 +513,7 @@ cuda_fn mc<T> operator-(mc<T> a, T b)
 }
 
 template<typename T>
-cuda_fn mc<T> operator-(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator-(mc<T> a, Number auto b)
 {
     return sub(a, static_cast<T>(b));
 }
@@ -521,7 +525,7 @@ cuda_fn mc<T> operator*(T a, mc<T> b)
 }
 
 template<typename T>
-cuda_fn mc<T> operator*(std::integral auto a, mc<T> b)
+cuda_fn mc<T> operator*(Number auto a, mc<T> b)
 {
     return mul(static_cast<T>(a), b);
 }
@@ -533,7 +537,7 @@ cuda_fn mc<T> operator*(mc<T> a, T b)
 }
 
 template<typename T>
-cuda_fn mc<T> operator*(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator*(mc<T> a, Number auto b)
 {
     return mul(static_cast<T>(b), a);
 }
@@ -551,7 +555,7 @@ cuda_fn mc<T> operator/(mc<T> a, T b)
 }
 
 template<typename T>
-cuda_fn mc<T> operator/(mc<T> a, std::integral auto b)
+cuda_fn mc<T> operator/(mc<T> a, Number auto b)
 {
     return div(a, static_cast<T>(b));
 }
@@ -591,7 +595,7 @@ cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> option
     T x       = mid(x0, lb, ub);
     T delta_x = intrinsic::pos_inf<T>();
 
-    auto terminate = [options](auto f_error, auto x, auto x_prev, std::integral auto i) {
+    auto terminate = [options](auto f_error, auto x, auto x_prev, Number auto i) {
         auto [maxiter, atol, rtol] = options;
         auto scaled_tol            = atol + rtol * abs(x); // alternative: max(atol, rtol * abs(x));
         bool x_small               = abs(x - x_prev) < scaled_tol;
