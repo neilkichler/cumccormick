@@ -168,8 +168,8 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         assert(contains(fabs(x), fabs(x_sample)));
         assert(contains(neg(x), -x_sample));
         assert(contains(sqr(x), x_sample * x_sample));
-        // assert(contains(cos(x), cos(x_sample)));
-        // assert(contains(sin(x), sin(x_sample)));
+        assert(contains(cos(x), cos(x_sample)));
+        assert(contains(sin(x), sin(x_sample)));
         assert(contains(tanh(x), tanh(x_sample)));
         assert(contains(atan(x), atan(x_sample)));
         assert(contains(asinh(x), asinh(x_sample)));
@@ -252,7 +252,7 @@ __global__ void test_fn_kernel()
 void test_bounds([[maybe_unused]] cudaStream_t stream)
 {
     constexpr int n_samples = 512;
-    constexpr int n_xs      = 13;
+    constexpr int n_xs      = 14;
 
     mc<double> xs[n_xs] = {
         { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } },
@@ -268,6 +268,7 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
         { .cv = 0x1.eb12p-1, .cc = 0x1.eb12p-1, .box = { .lb = 0x1.eb12p-2, .ub = 0x1.eb12p-1 } },
         { .cv = 0.3, .cc = 0.5, .box = { .lb = -1.0, .ub = 4.0 } },
         { .cv = 0.3, .cc = 0.5, .box = { .lb = -4.0, .ub = 1.0 } },
+        { .cv = 0x1.b6b00005212bp-1, .cc = 0x1.b6b0000580578p-1, .box = { .lb = 0x1.6636b09e7047p-33, .ub = 0x1.b6b00005a1b54p-1 } },
     };
 
     mc<double> *d_xs;

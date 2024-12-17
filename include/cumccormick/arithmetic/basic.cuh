@@ -887,7 +887,7 @@ cuda_fn mc<T> cos(mc<T> x)
             if (left && x <= xj || !left && x >= xj) {
                 return next_after(next_after(cos(x), -one), -one);
             } else {
-                return next_after(chord_of_concave(x, xj, xm, cos(xj), cos(xm)), -one);
+                return next_after(next_after(chord_of_concave(x, xj, xm, cos(xj), cos(xm)), -one), -one);
             }
 
             return cos(x);
