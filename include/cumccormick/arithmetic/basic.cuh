@@ -6,8 +6,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <type_traits>
 #include <numbers>
+#include <type_traits>
 
 namespace cu
 {
@@ -15,7 +15,7 @@ namespace cu
 template<typename T>
 using mc = mccormick<T>;
 
-template <typename T>
+template<typename T>
 concept Number = std::is_arithmetic_v<T>;
 
 #define cuda_fn inline constexpr __device__
@@ -337,7 +337,16 @@ cuda_fn mc<T> pown_even(mc<T> x, Number auto n)
 {
     using namespace intrinsic;
     using std::abs;
-    using std::pow;
+
+    auto pow = [](T x, std::integral auto n) -> T {
+        // The default std::pow implementation returns a double for std::pow(float, int). We want a float.
+        if constexpr (std::is_same_v<T, float>) {
+            return powf(x, n);
+        } else {
+            using std::pow;
+            return pow(x, n);
+        }
+    };
 
     T midcv;
     T midcc;
@@ -383,7 +392,16 @@ template<typename T>
 cuda_fn mc<T> pown(mc<T> x, Number auto n)
 {
     using namespace intrinsic;
-    using std::pow;
+
+    auto pow = [](T x, std::integral auto n) -> T {
+        // The default std::pow implementation returns a double for std::pow(float, int). We want a float.
+        if constexpr (std::is_same_v<T, float>) {
+            return powf(x, n);
+        } else {
+            using std::pow;
+            return pow(x, n);
+        }
+    };
 
     T cv;
     T cc;

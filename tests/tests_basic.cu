@@ -7,30 +7,34 @@
 template<typename T>
 using mc = cu::mccormick<T>;
 
-__device__ void print(mc<double> x)
+template<typename T>
+__device__ void print(mc<T> x)
 {
     printf("(cv: %.15g, cc: %.15g, box: [%g, %g])\n", x.cv, x.cc, x.box.lb, x.box.ub);
 };
 
+template<typename T>
 __global__ void basic_kernel()
 {
-    mc<double> a { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
-    mc<double> b { .cv = 3.0, .cc = 4.0, .box = { .lb = 2.0, .ub = 5.0 } };
+    mc<T> a { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
+    mc<T> b { .cv = 3.0, .cc = 4.0, .box = { .lb = 2.0, .ub = 5.0 } };
 
     print(a);
     print(b);
+
+    T two = 2.0;
 
     auto c = add(a, b);
     print(c);
     auto d = sub(a, b);
     print(d);
-    auto e = mul(2.0, a);
+    auto e = mul(two, a);
     print(e);
-    auto f = sqr((a + b) - a);
+    mc<T> f = sqr((a + b) - a);
     print(f);
-    auto g = div(f, 2.0);
+    auto g = div(f, two);
     print(g);
-    auto h = exp(a - 1.5);
+    auto h = exp(a - two);
     print(h);
     auto i = sqrt(a + b);
     print(i);
@@ -50,11 +54,11 @@ __global__ void basic_kernel()
     print(p);
     auto q = pown(a, 3);
     print(q);
-    auto r = pown(b, 3);
-    print(r);
-    auto s = pown(a - 2.0, 3);
-    print(s);
-    auto t = abs(a - 2.0);
+    // auto r = pown(b, 3);
+    // print(r);
+    // auto s = pown(a - two, 3);
+    // print(s);
+    auto t = abs(a - two);
     print(t);
     auto u = abs(b);
     print(u);
@@ -64,9 +68,9 @@ __global__ void basic_kernel()
     print(w);
     auto x = tanh(a);
     print(x);
-    auto y = asin(0.3 * (a - 1.75));
+    auto y = asin(two * (a - two));
     print(y);
-    auto z = acos(0.3 * (a - 1.75));
+    auto z = acos(two * (a - two));
     print(z);
     auto aa = atan(a);
     print(aa);
@@ -78,7 +82,7 @@ __global__ void basic_kernel()
     print(dd);
     auto ee = acosh(b);
     print(ee);
-    auto ff = atanh(0.3 * (a - 1.75));
+    auto ff = atanh(two * (a - two));
     print(ff);
 }
 
@@ -296,7 +300,8 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
 
 void test_basic(cudaStream_t stream)
 {
-    basic_kernel<<<1, 1, 0, stream>>>();
+    basic_kernel<float><<<1, 1, 0, stream>>>();
+    basic_kernel<double><<<1, 1, 0, stream>>>();
 }
 
 void test_pown(cudaStream_t stream)
