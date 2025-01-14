@@ -27,6 +27,8 @@ CuMcCormick is a CUDA library for McCormick relaxations.
 `asinh`
 `acosh` 
 `atanh`
+`erf`
+`erfc`
 
 `max`
 `min`
