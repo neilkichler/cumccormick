@@ -65,7 +65,7 @@ __global__ void k_mul(T x_const, mc<T> *y, mc<T> *res, int n)
 }
 
 template<typename T>
-cudaGraph_t construct_graph(cuda_ctx &ctx, mc<T> *xs, mc<T> *ys, mc<T> *res, mc<T> *d_xs, mc<T> *d_ys, mc<T> *d_res, mc<T> *d_tmp, int n)
+cudaGraph_t construct_graph(mc<T> *xs, mc<T> *ys, mc<T> *res, mc<T> *d_xs, mc<T> *d_ys, mc<T> *d_res, mc<T> *d_tmp, int n)
 {
     T a = 1.0;
     T b = 100.0;
@@ -222,8 +222,7 @@ void graph_example(cuda_ctx ctx)
     CUDA_CHECK(cudaMalloc(&d_res, size));
     CUDA_CHECK(cudaMalloc(&d_tmp, size));
 
-    // cudaGraph_t graph = construct_graph(ctx, xs.data(), ys.data(), res.data(), d_xs, d_ys, d_res, n);
-    cudaGraph_t graph = construct_graph(ctx, xs, ys, res, d_xs, d_ys, d_res, d_tmp, n);
+    cudaGraph_t graph = construct_graph(xs, ys, res, d_xs, d_ys, d_res, d_tmp, n);
 
     cudaGraphNode_t *nodes = nullptr;
     size_t n_nodes;

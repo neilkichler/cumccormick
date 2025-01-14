@@ -74,7 +74,7 @@ void launch(auto &&user_kernel, std::span<mc<T>> xs, std::span<mc<T>> ys)
     }
 }
 
-void user_kernel_multiple_inputs(cuda_ctx ctx)
+void user_kernel_multiple_inputs()
 {
     std::vector<mc<double>> xs {
         { .cv = -1.96, .cc = 1.25, .box = { .lb = -2.0, .ub = 2.0 } },
@@ -131,7 +131,7 @@ int main()
         CUDA_CHECK(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
 
     cuda_ctx ctx { buffers, streams, events };
-    user_kernel_multiple_inputs(ctx);
+    user_kernel_multiple_inputs();
 
     for (auto &event : events)
         CUDA_CHECK(cudaEventDestroy(event));
