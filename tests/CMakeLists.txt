@@ -31,7 +31,7 @@ set_target_properties(tests PROPERTIES CUDA_ARCHITECTURES native)
 set_target_properties(tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 # Link with main library and testing library
-target_link_libraries(tests PRIVATE cumccormick ut)
+target_link_libraries(tests PRIVATE cumccormick ut warnings)
 
 # Find and link with CUDA headers
 find_package(CUDAToolkit REQUIRED)
