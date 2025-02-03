@@ -20,6 +20,30 @@ concept Number = std::is_arithmetic_v<T>;
 
 #define cuda_fn inline constexpr __device__
 
+// This functions clips the convex and concave relaxation to the interval.
+// Sometimes the McCormick relaxation turns out worse than the interval bounds.
+//
+// E.g.,
+//          f(x,y) = cos(x)*cos(y) with x,y=[-42, (0, 0), 42]
+//
+//          returns     f(x,y)  = [-1, (-3, 3), 1],
+//          whereas cut(f(x,y)) = [-1, (-1, 1), 1].
+//
+template<typename T, bool CutActive = false>
+cuda_fn mc<T> cut(mc<T> a)
+{
+    if constexpr (CutActive) {
+        using std::max;
+        using std::min;
+
+        return { .cv  = max(a.cv, inf(a)),
+                 .cc  = min(a.cc, sup(a)),
+                 .box = a.box };
+    } else {
+        return a;
+    }
+}
+
 template<typename T>
 cuda_fn T mid(T v, T lb, T ub)
 {
@@ -128,16 +152,16 @@ cuda_fn mc<T> mul(mc<T> a, mc<T> b)
     T beta2  = min(mul_down(sup(a), b.cv), mul_down(sup(a), b.cc));
 
     T gamma1 = max(mul_up(inf(b), a.cv), mul_up(inf(b), a.cc));
-    T delta2 = max(mul_up(inf(a), b.cv), mul_up(inf(a), b.cc));
-    T delta1 = max(mul_up(sup(b), a.cv), mul_up(sup(b), a.cc));
     T gamma2 = max(mul_up(sup(a), b.cv), mul_up(sup(a), b.cc));
+    T delta1 = max(mul_up(sup(b), a.cv), mul_up(sup(b), a.cc));
+    T delta2 = max(mul_up(inf(a), b.cv), mul_up(inf(a), b.cc));
 
     // T cv = max(sub_down(add_down(alpha1, alpha2), mul_down(inf(a), inf(b))),
     //            sub_down(add_down(beta1, beta2), mul_down(sup(a), sup(b))));
     //
     // T cc = min(sub_up(add_up(gamma1, gamma2), mul_up(sup(a), inf(b))),
     //            sub_up(add_up(delta1, delta2), mul_up(inf(a), sup(b))));
-    //
+
     // using fmas we have:
     T cv = max(fma_down(-inf(a), inf(b), add_down(alpha1, alpha2)),
                fma_down(-sup(a), sup(b), add_down(beta1, beta2)));
@@ -145,9 +169,9 @@ cuda_fn mc<T> mul(mc<T> a, mc<T> b)
     T cc = min(fma_up(-sup(a), inf(b), add_up(gamma1, gamma2)),
                fma_up(-inf(a), sup(b), add_up(delta1, delta2)));
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = mul(a.box, b.box) };
+    return cut(mc<T> { .cv  = cv,
+                       .cc  = cc,
+                       .box = mul(a.box, b.box) });
 }
 
 template<typename T>
