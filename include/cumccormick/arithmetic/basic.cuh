@@ -29,7 +29,7 @@ concept Number = std::is_arithmetic_v<T>;
 //          returns     f(x,y)  = [-1, (-3, 3), 1],
 //          whereas cut(f(x,y)) = [-1, (-1, 1), 1].
 //
-template<typename T, bool CutActive = false>
+template<typename T, bool CutActive = true>
 cuda_fn mc<T> cut(mc<T> a)
 {
     if constexpr (CutActive) {
