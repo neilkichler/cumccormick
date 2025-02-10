@@ -53,14 +53,13 @@ CuMcCormick is a CUDA library for McCormick relaxations.
 ### System-wide
 ```bash
 git clone https://github.com/neilkichler/cumccormick.git
-cd cuinterval
+cd cumccormick
 cmake --preset release
 cmake --build build
 cmake --install build
 ```
 
 ### CMake Project
-
 
 #### [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 ```cmake
@@ -71,7 +70,7 @@ CPMAddPackage("gh:neilkichler/cumccormick@0.0.1")
 ```cmake
 include(FetchContent)
 FetchContent_Declare(
-  cuinterval
+  cumccormick
   GIT_REPOSITORY git@github.com:neilkichler/cumccormick.git
   GIT_TAG main
 )
