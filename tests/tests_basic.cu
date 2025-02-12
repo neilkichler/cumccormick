@@ -144,6 +144,17 @@ __device__ auto ackley(auto x, auto y)
         - exp(0.5 * (cos(2.0 * pi * x) + cos(2.0 * pi * y))) + e + 20.0;
 }
 
+__device__ auto griewank2d(auto x, auto y)
+{
+    return 1.0 + (sqr(x) + sqr(y)) / 4000.0 - cos(x / sqrt(1)) * cos(y / sqrt(2));
+}
+
+constexpr auto rastrigin2d(auto x, auto y)
+{
+    using std::numbers::pi;
+    return 10.0 * 2.0 + sqr(x) + sqr(y) - 10.0 * cos(2.0 * pi * x) + -10.0 * cos(2.0 * pi * y);
+}
+
 template<typename T>
 __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integral auto n)
 {
@@ -251,6 +262,18 @@ __global__ void test_fn_kernel()
     auto ack = ackley(x, y);
     // printf("ack.cv: %a, %.15f\n", ack.cv, ack.cv);
     // printf("ack.cc: %a, %.15f\n", ack.cc, ack.cc);
+
+    mc<double> gw_x = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
+    mc<double> gw_y = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
+    auto gw         = griewank2d(gw_x, gw_y);
+    assert(within_ulps(gw.cv, 0.0, 1));
+    assert(within_ulps(inf(gw), 0.0, 1));
+
+    mc<double> ras_x = { .cv = 1e-6, .cc = 1e-6, .box = { .lb = -100.0, .ub = 100.0 } };
+    mc<double> ras_y = { .cv = 1e-6, .cc = 1e-6, .box = { .lb = -100.0, .ub = 100.0 } };
+    auto ras         = rastrigin2d(ras_x, ras_y);
+    assert(ras.cv >= 0.0);
+    assert(inf(ras) >= 0.0);
 }
 
 void test_bounds([[maybe_unused]] cudaStream_t stream)
