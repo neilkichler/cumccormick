@@ -119,7 +119,7 @@ __global__ void pown_kernel()
 }
 
 template<typename T>
-__device__ bool within_ulps(T x, T y, std::size_t n)
+constexpr bool within_ulps(T x, T y, std::size_t n)
 {
     if (x == y) {
         return true;
@@ -136,17 +136,17 @@ __device__ bool within_ulps(T x, T y, std::size_t n)
     return false;
 }
 
-__device__ auto ackley(auto x, auto y)
+constexpr auto ackley(auto x, auto y)
 {
     using std::numbers::e;
     using std::numbers::pi;
-    return -20.0 * exp(-0.2 * sqrt(0.5 * (x * x + y * y)))
+    return -20.0 * exp(-0.2 * sqrt(0.5 * (sqr(x) + sqr(y))))
         - exp(0.5 * (cos(2.0 * pi * x) + cos(2.0 * pi * y))) + e + 20.0;
 }
 
-__device__ auto griewank2d(auto x, auto y)
+constexpr auto griewank2d(auto x, auto y)
 {
-    return 1.0 + (sqr(x) + sqr(y)) / 4000.0 - cos(x / sqrt(1)) * cos(y / sqrt(2));
+    return 1.0 + (sqr(x) + sqr(y)) / 4000.0 - cos(x / sqrt(1.0)) * cos(y / sqrt(2.0));
 }
 
 constexpr auto rastrigin2d(auto x, auto y)
@@ -255,13 +255,17 @@ __global__ void test_fn_kernel()
     assert(within_ulps(xexp.cv, 0x1.75bb077991bc3p-4, 1));
     assert(within_ulps(xexp.cc, 0x1.9fea64b7c3615p-2, 1));
 
-    // auto sincospow = sin(pown(y, -3)) * cos(pown(y, 2)); // -9.358968236779348e-01, 6.095699354841704e-01
-    // printf("sincospow.cv: %a, %.15f\n", sincospow.cv, sincospow.cv);
-    // printf("sincospow.cc: %a, %.15f\n", sincospow.cc, sincospow.cc);
+    auto sincospow = sin(pown(y, -3)) * cos(pown(y, 2)); // -9.358968236779348e-01, 6.095699354841704e-01
+    assert(inf(sincospow) > -1.0);
+    assert(sincospow.cv > -1.0);
+    assert(sincospow.cc < 1.0);
+    assert(sup(sincospow) < 1.0);
 
-    auto ack = ackley(x, y);
-    // printf("ack.cv: %a, %.15f\n", ack.cv, ack.cv);
-    // printf("ack.cc: %a, %.15f\n", ack.cc, ack.cc);
+    mc<double> ack_x = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
+    mc<double> ack_y = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
+    auto ack         = ackley(ack_x, ack_y);
+    assert(ack.cv > 0.0 - 1e-12);
+    assert(inf(ack) > 0.0 - 1e-12);
 
     mc<double> gw_x = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
     mc<double> gw_y = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
