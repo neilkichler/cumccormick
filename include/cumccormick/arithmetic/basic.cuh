@@ -20,6 +20,8 @@ concept Number = std::is_arithmetic_v<T>;
 
 #define cuda_fn inline constexpr __device__
 
+cuda_fn auto value(Number auto x) { return x; }
+
 // This functions clips the convex and concave relaxation to the interval.
 // Sometimes the McCormick relaxation turns out worse than the interval bounds.
 //
@@ -178,26 +180,34 @@ template<typename T>
 cuda_fn T chord_of_concave(T x, T lb, T ub, T f_lb, T f_ub)
 {
     // computing chord (line segment) over interval endpoints
-    using namespace intrinsic;
 
-    T slope = lb == ub
-        ? static_cast<T>(0)
-        : div_down(sub_down(f_ub, f_lb), (sub_down(ub, lb)));
+    // NOTE: Only x should be an active variable in the function when using forward-mode AD.
+    return [lb = value(lb), ub = value(ub), f_lb = value(f_lb), f_ub = value(f_ub)](T x) {
+        using namespace intrinsic;
+        using value_type = decltype(lb);
 
-    return add_down(f_lb, mul_down(slope, sub_down(x, lb)));
+        value_type slope = lb == ub ? static_cast<value_type>(0)
+                                    : div_down(sub_down(f_ub, f_lb), (sub_down(ub, lb)));
+
+        return add_down(f_lb, mul_down(slope, sub_down(x, lb)));
+    }(x);
 }
 
 template<typename T>
 cuda_fn T chord_of_convex(T x, T lb, T ub, T f_lb, T f_ub)
 {
     // computing chord (line segment) over interval endpoints
-    using namespace intrinsic;
 
-    T slope = lb == ub
-        ? static_cast<T>(0)
-        : div_up(sub_up(f_ub, f_lb), (sub_up(ub, lb)));
+    // NOTE: Only x should be an active variable in the function when using forward-mode AD.
+    return [lb = value(lb), ub = value(ub), f_lb = value(f_lb), f_ub = value(f_ub)](T x) {
+        using namespace intrinsic;
+        using value_type = decltype(lb);
 
-    return add_up(f_ub, mul_up(slope, sub_up(x, ub)));
+        value_type slope = lb == ub ? static_cast<value_type>(0)
+                                    : div_up(sub_up(f_ub, f_lb), (sub_up(ub, lb)));
+
+        return add_up(f_ub, mul_up(slope, sub_up(x, ub)));
+    }(x);
 }
 
 template<typename T>
