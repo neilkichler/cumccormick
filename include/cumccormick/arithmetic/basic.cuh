@@ -710,7 +710,7 @@ cuda_fn auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x,
     T y    = f(x);
     T dydx = df(x);
 
-    bool too_slow_progress = abs(2.0 * y) > abs(delta_x * dydx);
+    bool too_slow_progress = abs(2.0 * y) >= abs(delta_x * dydx);
 
     T x_new;
     if (abs(dydx) < epsilon || too_slow_progress) {
