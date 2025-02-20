@@ -654,12 +654,14 @@ struct root_solver_state
     T lb;
     T ub;
     T y;
+    T dydx;
 };
 
 template<typename T>
 cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> options = {})
 {
     using std::abs;
+    using std::signbit;
 
     if (f(lb) * f(ub) > 0.0) {
         return x0;
@@ -677,16 +679,31 @@ cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> option
     };
 
     for (int i = 0;; i++) {
-        auto state                = root_solver_state<T> { x, lb, ub };
-        auto [x_new, lb_, ub_, y] = step(state, delta_x);
-        lb                        = lb_;
-        ub                        = ub_;
-        x_new                     = mid(x_new, lb, ub);
+        auto state                      = root_solver_state<T> { x, lb, ub };
+        auto [x_new, lb_, ub_, y, dydx] = step(state, delta_x);
+
+        // If the derivative step wants to push us in the direction of the boundary
+        // we are currently at (instead of into the interval), we can directly stop the search.
+        //
+        // E.g.: x = 1.0
+        //       y = 42.0
+        //       dydx = -1.0
+        //       bounds [0.0, 1.0]
+        //
+        //       would lead to x_new = x + 42 = 1.0 (bounded) in the next step.
+        if ((x == lb && signbit(y) == signbit(dydx)) || (x == ub && signbit(y) != signbit(dydx))) {
+            return x;
+        }
+
+        lb    = lb_;
+        ub    = ub_;
+        x_new = mid(x_new, lb, ub);
 
         if (terminate(y, x_new, x, i)) {
             return x_new;
         }
 
+        // tighten bounds of the root (used in bisection)
         if (signbit(f(lb)) == signbit(f(x_new))) {
             // lb and x_new have same signs
             lb = x_new;
@@ -705,10 +722,10 @@ cuda_fn auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x,
 {
     using std::abs;
 
-    auto [x, lb, ub, _] = state;
+    auto [x, lb, ub, y, dydx] = state;
 
-    T y    = f(x);
-    T dydx = df(x);
+    y    = f(x);
+    dydx = df(x);
 
     bool too_slow_progress = abs(2.0 * y) >= abs(delta_x * dydx);
 
@@ -733,7 +750,7 @@ cuda_fn auto derivative_or_bisection_step(root_solver_state<T> state, T delta_x,
         x_new  = mid(x_new, lb, ub);
     }
 
-    return root_solver_state { x_new, lb, ub, y };
+    return root_solver_state { x_new, lb, ub, y, dydx };
 }
 
 cuda_fn auto newton_step(auto x, auto y, auto &&df)
@@ -744,9 +761,9 @@ cuda_fn auto newton_step(auto x, auto y, auto &&df)
 template<typename T>
 cuda_fn auto newton_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df)
 {
-    auto [x, lb, ub, _] = state;
-    T y                 = f(x);
-    x                   = x - newton_step(x, y, df);
+    auto [x, lb, ub, y, dydx] = state;
+    y                         = f(x);
+    x                         = x - newton_step(x, y, df);
     return root_solver_state { x, lb, ub, y };
 }
 
@@ -760,9 +777,9 @@ cuda_fn auto halley_step(auto x, auto y, auto &&df, auto &&ddf)
 template<typename T>
 cuda_fn auto halley_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf)
 {
-    auto [x, lb, ub, _] = state;
-    T y                 = f(x);
-    x                   = x - halley_step(x, y, df, ddf);
+    auto [x, lb, ub, y, dydx] = state;
+    y                         = f(x);
+    x                         = x - halley_step(x, y, df, ddf);
     return root_solver_state { x, lb, ub, y };
 }
 
@@ -780,9 +797,9 @@ cuda_fn auto householder_step(auto x, auto y, auto &&df, auto &&ddf, auto &&dddf
 template<typename T>
 cuda_fn auto householder_step(root_solver_state<T> state, auto delta_x, auto &&f, auto &&df, auto &&ddf, auto &&dddf)
 {
-    auto [x, lb, ub, _] = state;
-    T y                 = f(x);
-    x                   = x - householder_step(x, y, df, ddf, dddf);
+    auto [x, lb, ub, y, dydx] = state;
+    y                         = f(x);
+    x                         = x - householder_step(x, y, df, ddf, dddf);
     return root_solver_state { x, lb, ub, y };
 }
 
