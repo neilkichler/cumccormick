@@ -28,8 +28,8 @@ int main()
     // generate dummy data
     for (int i = 0; i < n; i++) {
         double v = i;
-        xs[i] = { .cv = -v, .cc = v, .box = { .lb = -v, .ub = v } };
-        ys[i] = { .cv = -v, .cc = v, .box = { .lb = -v, .ub = v } };
+        xs[i] = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
+        ys[i] = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
     }
 
     mc<double> *d_xs, *d_ys, *d_res;

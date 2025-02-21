@@ -65,7 +65,7 @@ int main()
     for (int i = 0; i < n_elems; i++) {
         double v = i;
         for (int j = 0; j < n_vars; j++) {
-            xs[i * n_vars + j] = { .cv = -v, .cc = v, .box = { .lb = -v, .ub = v } };
+            xs[i * n_vars + j] = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
         }
         // double v = 0;
         // xs[i]    = { .cv = v, .cc = v, .box = { .lb = v, .ub = v } };
@@ -89,7 +89,7 @@ int main()
     printf("custom([0, (0, 0), 0]) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
 
     // Second run
-    xs[0] = { .cv = 0.5, .cc = 1.0, .box = { .lb = 0.0, .ub = 2.0 } };
+    xs[0] = { .cv = 0.5, .cc = 1.0, .box = {{ .lb = 0.0, .ub = 2.0 }} };
 
     CUDA_CHECK(cudaMemcpy(d_xs, xs, n_elems * sizeof(*d_xs), cudaMemcpyHostToDevice));
 

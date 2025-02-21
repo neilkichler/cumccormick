@@ -16,8 +16,8 @@ __device__ void print(mc<T> x)
 template<typename T>
 __global__ void basic_kernel()
 {
-    mc<T> a { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
-    mc<T> b { .cv = 3.0, .cc = 4.0, .box = { .lb = 2.0, .ub = 5.0 } };
+    mc<T> a { .cv = 1.0, .cc = 2.0, .box = {{ .lb = 0.0, .ub = 3.0 }} };
+    mc<T> b { .cv = 3.0, .cc = 4.0, .box = {{ .lb = 2.0, .ub = 5.0 }} };
 
     print(a);
     print(b);
@@ -88,7 +88,7 @@ __global__ void basic_kernel()
 
 __global__ void pown_kernel()
 {
-    mc<double> a { .cv = 1.0, .cc = 2.0, .box = { .lb = 0.0, .ub = 3.0 } };
+    mc<double> a { .cv = 1.0, .cc = 2.0, .box = {{ .lb = 0.0, .ub = 3.0 }} };
 
     auto c = pow(a, 5);
     print(c);
@@ -236,9 +236,9 @@ __global__ void contains_samples_check_bivariate(mc<T> *xs, mc<T> *ys, std::inte
 
 __global__ void test_fn_kernel()
 {
-    mc<double> x { .cv = 1.5, .cc = 1.5, .box = { .lb = 1.0, .ub = 2.0 } };
-    mc<double> y { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.5, .ub = 0.7 } };
-    mc<double> z { .cv = 0.2, .cc = 1.0, .box = { .lb = -1.0, .ub = 2.0 } };
+    mc<double> x { .cv = 1.5, .cc = 1.5, .box = {{ .lb = 1.0, .ub = 2.0 }} };
+    mc<double> y { .cv = 0.6, .cc = 0.65, .box = {{ .lb = 0.5, .ub = 0.7 }} };
+    mc<double> z { .cv = 0.2, .cc = 1.0, .box = {{ .lb = -1.0, .ub = 2.0 }} };
 
     auto xy = x * y;
     assert(within_ulps(xy.cv, 0.85, 1));
@@ -261,20 +261,20 @@ __global__ void test_fn_kernel()
     assert(sincospow.cc < 1.0);
     assert(sup(sincospow) < 1.0);
 
-    mc<double> ack_x = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
-    mc<double> ack_y = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
+    mc<double> ack_x = { .cv = 0.0, .cc = 0.0, .box = {{ .lb = -42.0, .ub = 42.0 }} };
+    mc<double> ack_y = { .cv = 0.0, .cc = 0.0, .box = {{ .lb = -42.0, .ub = 42.0 }} };
     auto ack         = ackley(ack_x, ack_y);
     assert(ack.cv > 0.0 - 1e-12);
     assert(inf(ack) > 0.0 - 1e-12);
 
-    mc<double> gw_x = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
-    mc<double> gw_y = { .cv = 0.0, .cc = 0.0, .box = { .lb = -42.0, .ub = 42.0 } };
+    mc<double> gw_x = { .cv = 0.0, .cc = 0.0, .box = {{ .lb = -42.0, .ub = 42.0 }} };
+    mc<double> gw_y = { .cv = 0.0, .cc = 0.0, .box = {{ .lb = -42.0, .ub = 42.0 }} };
     auto gw         = griewank2d(gw_x, gw_y);
     assert(within_ulps(gw.cv, 0.0, 1));
     assert(within_ulps(inf(gw), 0.0, 1));
 
-    mc<double> ras_x = { .cv = 1e-6, .cc = 1e-6, .box = { .lb = -100.0, .ub = 100.0 } };
-    mc<double> ras_y = { .cv = 1e-6, .cc = 1e-6, .box = { .lb = -100.0, .ub = 100.0 } };
+    mc<double> ras_x = { .cv = 1e-6, .cc = 1e-6, .box = {{ .lb = -100.0, .ub = 100.0 }} };
+    mc<double> ras_y = { .cv = 1e-6, .cc = 1e-6, .box = {{ .lb = -100.0, .ub = 100.0 }} };
     auto ras         = rastrigin2d(ras_x, ras_y);
     assert(ras.cv >= 0.0);
     assert(inf(ras) >= 0.0);
@@ -286,20 +286,20 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
     constexpr int n_xs      = 14;
 
     mc<double> xs[n_xs] = {
-        { .cv = 0.6, .cc = 0.65, .box = { .lb = 0.0, .ub = 0.7 } },
-        { .cv = 7.6, .cc = 7.65, .box = { .lb = 6.1, .ub = 7.7 } },
-        { .cv = 50.6, .cc = 100.65, .box = { .lb = 50.0, .ub = 100.7 } },
-        { .cv = 3.6, .cc = 3.85, .box = { .lb = -4.1, .ub = 7.7 } },
-        { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.1, .ub = 0.1 } },
-        { .cv = -0.01, .cc = 0.01, .box = { .lb = -0.01, .ub = 0.01 } },
-        { .cv = 10000.01, .cc = 10001.01, .box = { .lb = 0.0, .ub = 100000.0 } },
-        { .cv = -3.96, .cc = -3.25, .box = { .lb = -4.1, .ub = -3.1 } },
-        { .cv = 0.875, .cc = 0.875, .box = { .lb = 0.875, .ub = 0.875 } },
-        { .cv = 0.5, .cc = 0.5, .box = { .lb = 0.5, .ub = 0.5 } },
-        { .cv = 0x1.eb12p-1, .cc = 0x1.eb12p-1, .box = { .lb = 0x1.eb12p-2, .ub = 0x1.eb12p-1 } },
-        { .cv = 0.3, .cc = 0.5, .box = { .lb = -1.0, .ub = 4.0 } },
-        { .cv = 0.3, .cc = 0.5, .box = { .lb = -4.0, .ub = 1.0 } },
-        { .cv = 0x1.b6b00005212bp-1, .cc = 0x1.b6b0000580578p-1, .box = { .lb = 0x1.6636b09e7047p-33, .ub = 0x1.b6b00005a1b54p-1 } },
+        { .cv = 0.6, .cc = 0.65, .box = {{ .lb = 0.0, .ub = 0.7 }} },
+        { .cv = 7.6, .cc = 7.65, .box = {{ .lb = 6.1, .ub = 7.7 }} },
+        { .cv = 50.6, .cc = 100.65, .box = {{ .lb = 50.0, .ub = 100.7 }} },
+        { .cv = 3.6, .cc = 3.85, .box = {{ .lb = -4.1, .ub = 7.7 }} },
+        { .cv = -0.01, .cc = 0.01, .box = {{ .lb = -0.1, .ub = 0.1 }} },
+        { .cv = -0.01, .cc = 0.01, .box = {{ .lb = -0.01, .ub = 0.01 }} },
+        { .cv = 10000.01, .cc = 10001.01, .box = {{ .lb = 0.0, .ub = 100000.0 }} },
+        { .cv = -3.96, .cc = -3.25, .box = {{ .lb = -4.1, .ub = -3.1 }} },
+        { .cv = 0.875, .cc = 0.875, .box = {{ .lb = 0.875, .ub = 0.875 }} },
+        { .cv = 0.5, .cc = 0.5, .box = {{ .lb = 0.5, .ub = 0.5 }} },
+        { .cv = 0x1.eb12p-1, .cc = 0x1.eb12p-1, .box = {{ .lb = 0x1.eb12p-2, .ub = 0x1.eb12p-1 }} },
+        { .cv = 0.3, .cc = 0.5, .box = {{ .lb = -1.0, .ub = 4.0 }} },
+        { .cv = 0.3, .cc = 0.5, .box = {{ .lb = -4.0, .ub = 1.0 }} },
+        { .cv = 0x1.b6b00005212bp-1, .cc = 0x1.b6b0000580578p-1, .box = {{ .lb = 0x1.6636b09e7047p-33, .ub = 0x1.b6b00005a1b54p-1 }} },
     };
 
     mc<double> *d_xs;
@@ -311,8 +311,8 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
     mc<double> *d_ys;
     constexpr int n_ys  = 2;
     mc<double> ys[n_ys] = {
-        { .cv = -0.5, .cc = 0.5, .box = { .lb = -1.0, .ub = 3.0 } },
-        { .cv = 0.5, .cc = 2.5, .box = { .lb = 0.0, .ub = 3.0 } },
+        { .cv = -0.5, .cc = 0.5, .box = {{ .lb = -1.0, .ub = 3.0 }} },
+        { .cv = 0.5, .cc = 2.5, .box = {{ .lb = 0.0, .ub = 3.0 }} },
     };
 
     CUDA_CHECK(cudaMalloc(&d_ys, n_ys * sizeof(mc<double>)));

@@ -88,8 +88,8 @@ int main()
 
     for (int i = 0; i < n; i++) {
         double v = i;
-        xs[i]    = { .cv = -v, .cc = v, .box = { .lb = -v, .ub = v } };
-        ys[i]    = { .cv = -v, .cc = v, .box = { .lb = -v, .ub = v } };
+        xs[i]    = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
+        ys[i]    = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
     }
 
     CUDA_CHECK(cudaMemcpy(d_xs, xs.data(), n * sizeof(*d_xs), cudaMemcpyHostToDevice));
@@ -102,7 +102,7 @@ int main()
     auto r = res[0];
     printf("rosenbrok(0, 0) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
 
-    xs[0] = { .cv = -4.96, .cc = 4.25, .box = { .lb = -8.0, .ub = 8.0 } };
+    xs[0] = { .cv = -4.96, .cc = 4.25, .box = {{ .lb = -8.0, .ub = 8.0 }} };
 
     // Second run
     CUDA_CHECK(cudaMemcpy(d_xs, xs.data(), n * sizeof(*d_xs), cudaMemcpyHostToDevice));
@@ -127,8 +127,8 @@ int main()
 
     for (int i = 0; i < n; i++) {
         double v = i;
-        xs[i]    = { .cv = -v, .cc = v, .box = { .lb = -v, .ub = v } };
-        ys[i]    = { .cv = -v, .cc = v, .box = { .lb = -v, .ub = v } };
+        xs[i]    = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
+        ys[i]    = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
     }
 
     CUDA_CHECK(cudaMemcpy(d_xs, xs, n * sizeof(*d_xs), cudaMemcpyHostToDevice));
@@ -145,7 +145,7 @@ int main()
     printf("rosenbrok([-1, (-1, 1), 1]) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
 
     // Second run
-    xs[0] = { .cv = -4.96, .cc = 4.25, .box = { .lb = -8.0, .ub = 8.0 } };
+    xs[0] = { .cv = -4.96, .cc = 4.25, .box = {{ .lb = -8.0, .ub = 8.0 }} };
 
     CUDA_CHECK(cudaMemcpy(d_xs, xs, n * sizeof(*d_xs), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_ys, ys, n * sizeof(*d_ys), cudaMemcpyHostToDevice));
