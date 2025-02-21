@@ -206,8 +206,8 @@ void graph_example(cuda_ctx ctx)
 
     for (int i = 0; i < n; i++) {
         double v = i;
-        xs[i]    = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
-        ys[i]    = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
+        xs[i]    = { -v, v };
+        ys[i]    = { -v, v };
     }
 
     const int size = n * sizeof(mc<T>);
@@ -246,7 +246,7 @@ void graph_example(cuda_ctx ctx)
     //
 
     // we can reuse the same graph for different inputs
-    xs[0] = { .cv = -4.96, .cc = 4.25, .box = {{ .lb = -8.0, .ub = 8.0 }} };
+    xs[0] = { -8.0, -4.96, 4.25, 8.0 };
     CUDA_CHECK(cudaGraphLaunch(graph_exec, g_stream));
     CUDA_CHECK(cudaStreamSynchronize(g_stream));
 

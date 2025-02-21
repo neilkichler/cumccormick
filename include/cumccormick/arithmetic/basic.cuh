@@ -38,9 +38,9 @@ cuda_fn mc<T> cut(mc<T> a)
         using std::max;
         using std::min;
 
-        return { .cv  = max(a.cv, inf(a)),
-                 .cc  = min(a.cc, sup(a)),
-                 .box = a.box };
+        return { { .cv  = max(a.cv, inf(a)),
+                   .cc  = min(a.cc, sup(a)),
+                   .box = a.box } };
     } else {
         return a;
     }
@@ -63,58 +63,58 @@ cuda_fn mc<T> pos(mc<T> x)
 template<typename T>
 cuda_fn mc<T> neg(mc<T> x)
 {
-    return { .cv  = -x.cc,
-             .cc  = -x.cv,
-             .box = -x.box };
+    return { { .cv  = -x.cc,
+               .cc  = -x.cv,
+               .box = -x.box } };
 }
 
 template<typename T>
 cuda_fn mc<T> add(mc<T> a, mc<T> b)
 {
-    return { .cv  = intrinsic::add_down(a.cv, b.cv),
-             .cc  = intrinsic::add_up(a.cc, b.cc),
-             .box = a.box + b.box };
+    return { { .cv  = intrinsic::add_down(a.cv, b.cv),
+               .cc  = intrinsic::add_up(a.cc, b.cc),
+               .box = a.box + b.box } };
 }
 
 template<typename T>
 cuda_fn mc<T> add(T a, mc<T> b)
 {
-    return { .cv  = intrinsic::add_down(a, b.cv),
-             .cc  = intrinsic::add_up(a, b.cc),
-             .box = a + b.box };
+    return { { .cv  = intrinsic::add_down(a, b.cv),
+               .cc  = intrinsic::add_up(a, b.cc),
+               .box = a + b.box } };
 }
 
 template<typename T>
 cuda_fn mc<T> sub(mc<T> a, mc<T> b)
 {
-    return { .cv  = intrinsic::sub_down(a.cv, b.cc),
-             .cc  = intrinsic::sub_up(a.cc, b.cv),
-             .box = a.box - b.box };
+    return { { .cv  = intrinsic::sub_down(a.cv, b.cc),
+               .cc  = intrinsic::sub_up(a.cc, b.cv),
+               .box = a.box - b.box } };
 }
 
 template<typename T>
 cuda_fn mc<T> sub(T a, mc<T> b)
 {
-    return { .cv  = intrinsic::sub_down(a, b.cc),
-             .cc  = intrinsic::sub_up(a, b.cv),
-             .box = a - b.box };
+    return { { .cv  = intrinsic::sub_down(a, b.cc),
+               .cc  = intrinsic::sub_up(a, b.cv),
+               .box = a - b.box } };
 }
 
 template<typename T>
 cuda_fn mc<T> sub(mc<T> a, T b)
 {
-    return { .cv  = intrinsic::sub_down(a.cv, b),
-             .cc  = intrinsic::sub_up(a.cc, b),
-             .box = a.box - b };
+    return { { .cv  = intrinsic::sub_down(a.cv, b),
+               .cc  = intrinsic::sub_up(a.cc, b),
+               .box = a.box - b } };
 }
 
 template<typename T>
 cuda_fn mc<T> mul(T a, mc<T> b)
 {
     bool is_neg = a < static_cast<T>(0);
-    return { .cv  = intrinsic::mul_down(a, is_neg ? b.cc : b.cv),
-             .cc  = intrinsic::mul_up(a, is_neg ? b.cv : b.cc),
-             .box = a * b.box };
+    return { { .cv  = intrinsic::mul_down(a, is_neg ? b.cc : b.cv),
+               .cc  = intrinsic::mul_up(a, is_neg ? b.cv : b.cc),
+               .box = a * b.box } };
 }
 
 template<typename T>
@@ -138,9 +138,9 @@ cuda_fn mc<T> mul_nearest_even_rounding(mc<T> a, mc<T> b)
     T cc = min(gamma1 + gamma2 - sup(a) * inf(b),
                delta1 + delta2 - inf(a) * sup(b));
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = mul(a.box, b.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = mul(a.box, b.box) } };
 }
 
 template<typename T>
@@ -171,9 +171,7 @@ cuda_fn mc<T> mul(mc<T> a, mc<T> b)
     T cc = min(fma_up(-sup(a), inf(b), add_up(gamma1, gamma2)),
                fma_up(-inf(a), sup(b), add_up(delta1, delta2)));
 
-    return cut(mc<T> { .cv  = cv,
-                       .cc  = cc,
-                       .box = mul(a.box, b.box) });
+    return cut<T>({ cv, cc, mul(a.box, b.box) });
 }
 
 template<typename T>
@@ -230,14 +228,16 @@ cuda_fn mc<T> recip(mc<T> x)
             cv = rcp_down(midcv);
             cc = intrinsic::pos_inf<T>();
         } else if (inf(x) < zero && zero < sup(x)) {
-            return { .cv  = intrinsic::neg_inf<T>(),
-                     .cc  = intrinsic::pos_inf<T>(),
-                     .box = entire<T>() };
+            return { intrinsic::neg_inf<T>(),
+                     intrinsic::pos_inf<T>(),
+                     entire<T>() };
         } else if (inf(x) == zero && zero == sup(x)) {
             // NOTE: Alternatively, we could return nans.
-            return { .cv  = intrinsic::neg_inf<T>(),
-                     .cc  = intrinsic::pos_inf<T>(),
-                     .box = entire<T>() };
+            return {
+                { .cv  = intrinsic::neg_inf<T>(),
+                  .cc  = intrinsic::pos_inf<T>(),
+                  .box = entire<T>() }
+            };
         }
     } else if (sup(x) < zero) {
         // for x < 0, recip is concave
@@ -250,9 +250,9 @@ cuda_fn mc<T> recip(mc<T> x)
     }
 
     // TODO: relaxation could be more efficient if we embed the IA into the different cases.
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = recip(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = recip(x.box) } };
 }
 
 template<typename T>
@@ -262,9 +262,9 @@ cuda_fn mc<T> div(mc<T> a, T b)
 
     bool is_neg = b < static_cast<T>(0);
 
-    return { .cv  = div_down(is_neg ? a.cc : a.cv, b),
-             .cc  = div_up(is_neg ? a.cv : a.cc, b),
-             .box = a.box / b };
+    return { { .cv  = div_down(is_neg ? a.cc : a.cv, b),
+               .cc  = div_up(is_neg ? a.cv : a.cc, b),
+               .box = a.box / b } };
 }
 
 template<typename T>
@@ -309,9 +309,9 @@ cuda_fn mc<T> sqr(mc<T> x)
     }
 
     T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_down(inf(x), sup(x)));
-    return { .cv  = mul_down(midcv, midcv),
-             .cc  = cc,
-             .box = sqr(x.box) };
+    return { { .cv  = mul_down(midcv, midcv),
+               .cc  = cc,
+               .box = sqr(x.box) } };
 }
 
 template<typename T>
@@ -326,9 +326,9 @@ cuda_fn mc<T> abs(mc<T> x)
     T midcc = mid(xmax, x.cv, x.cc);
 
     T cc = chord_of_convex(midcc, inf(x), sup(x), abs(inf(x)), abs(sup(x)));
-    return { .cv  = abs(midcv),
-             .cc  = cc,
-             .box = abs(x.box) };
+    return { { .cv  = abs(midcv),
+               .cc  = cc,
+               .box = abs(x.box) } };
 }
 
 template<typename T>
@@ -348,9 +348,9 @@ cuda_fn mc<T> exp(mc<T> x)
         ? intrinsic::pos_inf<T>()
         : chord_of_convex(x.cc, inf(x), sup(x), exp(inf(x)), exp(sup(x)));
 
-    return { .cv  = next_after(exp(x.cv), static_cast<T>(0)),
-             .cc  = cc,
-             .box = exp(x.box) };
+    return { { .cv  = next_after(exp(x.cv), static_cast<T>(0)),
+               .cc  = cc,
+               .box = exp(x.box) } };
 }
 
 template<typename T>
@@ -361,9 +361,9 @@ cuda_fn mc<T> sqrt(mc<T> x)
     T midcc = mid(sup(x), x.cv, x.cc);
     T cv    = chord_of_concave(midcv, inf(x), sup(x), sqrt_down(inf(x)), sqrt_up(sup(x)));
 
-    return { .cv  = cv,
-             .cc  = sqrt_up(midcc),
-             .box = sqrt(x.box) };
+    return { { .cv  = cv,
+               .cc  = sqrt_up(midcc),
+               .box = sqrt(x.box) } };
 }
 
 template<typename T>
@@ -408,18 +408,20 @@ cuda_fn mc<T> pown_even(mc<T> x, Number auto n)
             midcc = x.cv;
         } else {
             midcv = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
-            return { .cv  = pow(midcv, n),
-                     .cc  = intrinsic::pos_inf<T>(),
-                     .box = pown(x.box, n) };
+            return {
+                { .cv  = pow(midcv, n),
+                  .cc  = intrinsic::pos_inf<T>(),
+                  .box = pown(x.box, n) }
+            };
         }
     }
 
     // TODO: floating point error in pow not accounted for
     cc = chord_of_convex(midcc, inf(x), sup(x), pow(inf(x), n), pow(sup(x), n));
 
-    return { .cv  = pow(midcv, n),
-             .cc  = cc,
-             .box = pown(x.box, n) };
+    return { { .cv  = pow(midcv, n),
+               .cc  = cc,
+               .box = pown(x.box, n) } };
 }
 
 template<typename T>
@@ -442,9 +444,7 @@ cuda_fn mc<T> pown(mc<T> x, Number auto n)
 
     if (n == 0) {
         constexpr auto one = static_cast<T>(1);
-        return { .cv  = one,
-                 .cc  = one,
-                 .box = { one, one } };
+        return { one };
     } else if (n == 1) {
         return x;
     } else if (n == 2) {
@@ -471,18 +471,20 @@ cuda_fn mc<T> pown(mc<T> x, Number auto n)
                 cv = pow(inf(x), n) * ((sup(x) - x.cv) / (sup(x) - inf(x))) + pow(max(zero, x.cv), n);
                 cc = pow(sup(x), n) * ((x.cc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, x.cc), n);
             } else {
-                return { .cv  = intrinsic::pos_inf<T>(),
-                         .cc  = intrinsic::neg_inf<T>(),
-                         .box = entire<T>() };
+                return {
+                    { .cv  = intrinsic::pos_inf<T>(),
+                      .cc  = intrinsic::neg_inf<T>(),
+                      .box = entire<T>() }
+                };
             }
         }
     } else { // even power
         return pown_even(x, n);
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = pown(x.box, n) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = pown(x.box, n) } };
 }
 
 template<typename T>
@@ -1028,9 +1030,9 @@ cuda_fn mc<T> cos(mc<T> x)
 
     T cc = -cv_cos(x_cc, x_cc_lb, x_cc_ub);
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = cos(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = cos(x.box) } };
 }
 
 template<typename T>
@@ -1040,17 +1042,15 @@ cuda_fn mc<T> cos_box(mc<T> x)
 
     interval<T> cos_box = cos(x.box);
 
-    return { .cv  = inf(cos_box),
-             .cc  = sup(cos_box),
-             .box = cos_box };
+    return { { .cv  = inf(cos_box),
+               .cc  = sup(cos_box),
+               .box = cos_box } };
 }
 
 template<typename T>
 cuda_fn mc<T> sin(mc<T> x)
 {
-    constexpr mc<T> pi_2 = { .cv  = 0x1.921fb54442d17p+0,
-                             .cc  = 0x1.921fb54442d19p+0,
-                             .box = { 0x1.921fb54442d17p+0, 0x1.921fb54442d19p+0 } };
+    constexpr mc<T> pi_2 { 0x1.921fb54442d17p+0, 0x1.921fb54442d19p+0 };
     return cos(x - pi_2);
 }
 
@@ -1128,9 +1128,9 @@ cuda_fn mc<T> sinh(mc<T> x)
         }
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = sinh(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = sinh(x.box) } };
 }
 
 template<typename T>
@@ -1159,9 +1159,9 @@ cuda_fn mc<T> cosh(mc<T> x)
         midcc = (abs(lb) >= abs(ub)) ? x.cv : x.cc;
     }
 
-    return { .cv  = cosh(midcv),
-             .cc  = chord_of_convex(midcc, lb, ub, cosh(lb), cosh(ub)),
-             .box = cosh(x.box) };
+    return { { .cv  = cosh(midcv),
+               .cc  = chord_of_convex(midcc, lb, ub, cosh(lb), cosh(ub)),
+               .box = cosh(x.box) } };
 }
 
 template<typename T>
@@ -1237,9 +1237,9 @@ cuda_fn mc<T> tanh(mc<T> x)
         }
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = tanh(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = tanh(x.box) } };
 }
 
 template<typename T>
@@ -1316,17 +1316,15 @@ cuda_fn mc<T> asin(mc<T> x)
         }
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = asin(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = asin(x.box) } };
 }
 
 template<typename T>
 cuda_fn mc<T> acos(mc<T> x)
 {
-    constexpr mc<T> pi_2 = { .cv  = 0x1.921fb54442d17p+0,
-                             .cc  = 0x1.921fb54442d19p+0,
-                             .box = { 0x1.921fb54442d17p+0, 0x1.921fb54442d19p+0 } };
+    constexpr mc<T> pi_2 { 0x1.921fb54442d17p+0, 0x1.921fb54442d19p+0 };
     return asin(-x) + pi_2;
 }
 
@@ -1404,9 +1402,9 @@ cuda_fn mc<T> atan(mc<T> x)
         }
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = atan(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = atan(x.box) } };
 }
 
 template<typename T>
@@ -1483,9 +1481,9 @@ cuda_fn mc<T> asinh(mc<T> x)
         }
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = asinh(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = asinh(x.box) } };
 }
 
 template<typename T>
@@ -1499,9 +1497,9 @@ cuda_fn mc<T> acosh(mc<T> x)
     T midcc = mid(sup(x), x.cv, x.cc);
     T cv    = chord_of_concave(midcv, inf(x), sup(x), acosh(inf(x)), acosh(sup(x)));
 
-    return { .cv  = cv,
-             .cc  = acosh(midcc),
-             .box = acosh(x.box) };
+    return { { .cv  = cv,
+               .cc  = acosh(midcc),
+               .box = acosh(x.box) } };
 }
 
 template<typename T>
@@ -1578,9 +1576,9 @@ cuda_fn mc<T> atanh(mc<T> x)
         }
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = atanh(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = atanh(x.box) } };
 }
 
 template<typename T>
@@ -1604,9 +1602,9 @@ cuda_fn mc<T> log(mc<T> x)
         cv = neg_inf<T>();
     }
 
-    return { .cv  = cv,
-             .cc  = log(midcc),
-             .box = log(x.box) };
+    return { { .cv  = cv,
+               .cc  = log(midcc),
+               .box = log(x.box) } };
 }
 
 template<typename T>
@@ -1690,9 +1688,9 @@ cuda_fn mc<T> erf(mc<T> x)
         }
     }
 
-    return { .cv  = cv,
-             .cc  = cc,
-             .box = erf(x.box) };
+    return { { .cv  = cv,
+               .cc  = cc,
+               .box = erf(x.box) } };
 }
 
 template<typename T>
@@ -1721,9 +1719,9 @@ cuda_fn mc<T> max(mc<T> a, mc<T> b)
         cc = 0.5 * (a + b + abs(a - b)).cc; // uses the fact that max(a,b)= (a + b + abs(a - b)) / 2
     }
 
-    return { .cv  = max(a.cv, b.cv), // max is a convex function
-             .cc  = cc,
-             .box = max(a.box, b.box) };
+    return { { .cv  = max(a.cv, b.cv), // max is a convex function
+               .cc  = cc,
+               .box = max(a.box, b.box) } };
 }
 
 template<typename T>
@@ -1742,9 +1740,9 @@ cuda_fn mc<T> min(mc<T> a, mc<T> b)
         cv = 0.5 * (a + b - abs(a - b)).cv; // uses the fact that min(a,b)= (a + b - abs(a - b)) / 2
     }
 
-    return { .cv  = cv,
-             .cc  = min(a.cc, b.cc),
-             .box = min(a.box, b.box) };
+    return { { .cv  = cv,
+               .cc  = min(a.cc, b.cc),
+               .box = min(a.box, b.box) } };
 }
 
 template<typename T>
@@ -1756,9 +1754,9 @@ cuda_fn T width(mc<T> x)
 template<typename T>
 cuda_fn mc<T> hull(mc<T> a, mc<T> b)
 {
-    return { .cv  = min(a, b).cv,
-             .cc  = max(a, b).cc,
-             .box = convex_hull(a.box, b.box) };
+    return { { .cv  = min(a, b).cv,
+               .cc  = max(a, b).cc,
+               .box = convex_hull(a.box, b.box) } };
 }
 
 #undef cuda_fn

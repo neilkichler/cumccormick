@@ -399,7 +399,7 @@ void streaming_example(cuda_ctx ctx)
     for (int i = 0; i < n_elems; i++) {
         double v = i;
         for (int j = 0; j < n_vars; j++) {
-            xs[i * n_vars + j] = { .cv = -v, .cc = v, .box = {{ .lb = -v, .ub = v }} };
+            xs[i * n_vars + j] = { -v, v };
         }
     }
 
@@ -467,7 +467,7 @@ void streaming_example(cuda_ctx ctx)
     //
 
     // we can reuse the same graph for different inputs
-    xs[0] = { .cv = 0.5, .cc = 1.0, .box = {{ .lb = 0.0, .ub = 2.0 }} };
+    xs[0] = { 0.0, 0.5, 1.0, 2.0 };
 
     // CUDA_CHECK(cudaMemcpy(d_xs, xs.data(), xs_size, cudaMemcpyHostToDevice));
     // CUDA_CHECK(cudaMemcpy(d_ys, ys.data(), ys_size, cudaMemcpyHostToDevice));

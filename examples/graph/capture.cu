@@ -203,8 +203,8 @@ void streaming_example(cuda_ctx ctx)
     for (int i = 0; i < n; i++) {
         double v = i; // + 1;
         // double v = i + 1;
-        xs[i] = { .cv = -v, .cc = v, .box = { { .lb = -v, .ub = v } } };
-        ys[i] = { .cv = -v, .cc = v, .box = { { .lb = -v, .ub = v } } };
+        xs[i] = {{ .lb = -v, .cv = -v, .cc = v, .ub = v }};
+        ys[i] = {{ .lb = -v, .cv = -v, .cc = v, .ub = v }};
     }
 
     mc<T> *d_xs;
@@ -262,7 +262,7 @@ void streaming_example(cuda_ctx ctx)
     //
 
     // we can reuse the same graph for different inputs
-    xs[0] = { .cv = -4.96, .cc = 4.25, .box = {{ .lb = -8.0, .ub = 8.0 }} };
+    xs[0] = {{ .lb = -8.0, .cv = -4.96, .cc = 4.25, .ub = 8.0 }};
 
     CUDA_CHECK(cudaMemcpy(d_xs, xs, xs_size, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_ys, ys, ys_size, cudaMemcpyHostToDevice));
