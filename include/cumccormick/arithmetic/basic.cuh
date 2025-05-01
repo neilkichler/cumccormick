@@ -308,6 +308,7 @@ cuda_fn mc<T> sqr(mc<T> x)
         midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
     }
 
+    // below is symbolic simplification of chord_of_convex(midcc, inf(x), sup(x), sqr(inf(x)), sqr(sup(x))). 
     T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_down(inf(x), sup(x)));
     return { { .cv  = mul_down(midcv, midcv),
                .cc  = cc,
