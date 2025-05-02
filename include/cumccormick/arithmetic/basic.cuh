@@ -296,7 +296,6 @@ cuda_fn mc<T> sqr(mc<T> x)
     T midcc;
     constexpr auto zero = static_cast<T>(0);
 
-    // TODO: maybe we should use x.cv and x.cc in the if statement?
     if (sup(x) <= zero) {
         midcv = x.cc;
         midcc = x.cv;
@@ -304,6 +303,7 @@ cuda_fn mc<T> sqr(mc<T> x)
         midcv = x.cv;
         midcc = x.cc;
     } else {
+        // the above are special cases of this general case.
         midcv = mid(zero, x.cv, x.cc);
         midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
     }
@@ -388,7 +388,6 @@ cuda_fn mc<T> pown_even(mc<T> x, Number auto n)
     constexpr auto zero = static_cast<T>(0);
 
     T cc;
-    // TODO: Why do we check against sup(x) and inf(x) instead of x.cc and x.cv?
     if (n > 0) {
         if (sup(x) <= zero) {
             midcv = x.cc;
