@@ -448,7 +448,8 @@ cuda_fn mc<T> pown(mc<T> x, Number auto n)
     } else if (n == 1) {
         return x;
     } else if (n == 2) {
-        return sqr(x); // TODO: could be merged with even power case
+        // NOTE: not merged with even case since we can optimize the line segment computation in sqr.
+        return sqr(x);
     }
 
     // TODO: n < 0 not considered yet
