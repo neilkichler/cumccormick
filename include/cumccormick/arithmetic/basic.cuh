@@ -270,6 +270,10 @@ cuda_fn mc<T> div(mc<T> a, T b)
 template<typename T>
 cuda_fn mc<T> div(mc<T> a, mc<T> b)
 {
+    if (a == b) {
+        return mc<T>{1.0};
+    }
+
     // TODO: implement tighter relaxation
     return mul(a, recip(b));
 }
