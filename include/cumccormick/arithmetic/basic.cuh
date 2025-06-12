@@ -35,8 +35,7 @@ template<typename T, bool CutActive = true>
 cuda_fn mc<T> cut(mc<T> a)
 {
     if constexpr (CutActive) {
-        using std::max;
-        using std::min;
+        using std::max, std::min;
 
         return { { .cv  = max(a.cv, inf(a)),
                    .cc  = min(a.cc, sup(a)),
@@ -667,8 +666,7 @@ struct root_solver_state
 template<typename T>
 cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> options = {})
 {
-    using std::abs;
-    using std::signbit;
+    using std::abs, std::signbit;
 
     if (f(lb) * f(ub) > 0.0) {
         return x0;
@@ -877,11 +875,7 @@ template<typename T>
 cuda_fn mc<T> cos(mc<T> x)
 {
     using namespace intrinsic;
-    using std::abs;
-    using std::ceil;
-    using std::cos;
-    using std::floor;
-    using std::sin;
+    using std::abs, std::ceil, std::cos, std::floor, std::sin;
 
     // TODO: use rounded ops
 
@@ -1062,8 +1056,7 @@ cuda_fn mc<T> sin(mc<T> x)
 template<typename T>
 cuda_fn mc<T> sinh(mc<T> x)
 {
-    using std::cosh;
-    using std::sinh;
+    using std::cosh, std::sinh;
 
     constexpr auto zero = static_cast<T>(0);
 
@@ -1142,8 +1135,7 @@ template<typename T>
 cuda_fn mc<T> cosh(mc<T> x)
 {
     using namespace intrinsic;
-    using std::abs;
-    using std::cosh;
+    using std::abs, std::cosh;
 
     constexpr auto zero = static_cast<T>(0);
 
@@ -1250,8 +1242,7 @@ cuda_fn mc<T> tanh(mc<T> x)
 template<typename T>
 cuda_fn mc<T> asin(mc<T> x)
 {
-    using std::asin;
-    using std::pow;
+    using std::asin, std::pow;
 
     constexpr auto zero = static_cast<T>(0);
 
@@ -1285,7 +1276,7 @@ cuda_fn mc<T> asin(mc<T> x)
         //
         // where f(x) = asin(x) and f'(x) = 1 / sqrt(1 - x^2).
 
-        auto dasin = [](T x) { using std::sqrt; using std::pow; return 1 / sqrt(1 - pow(x, 2)); };
+        auto dasin = [](T x) { using std::sqrt, std::pow; return 1 / sqrt(1 - pow(x, 2)); };
 
         {
             // cv:
@@ -1336,8 +1327,7 @@ cuda_fn mc<T> acos(mc<T> x)
 template<typename T>
 cuda_fn mc<T> atan(mc<T> x)
 {
-    using std::atan;
-    using std::pow;
+    using std::atan, std::pow;
 
     constexpr auto zero = static_cast<T>(0);
 
@@ -1415,8 +1405,7 @@ cuda_fn mc<T> atan(mc<T> x)
 template<typename T>
 cuda_fn mc<T> asinh(mc<T> x)
 {
-    using std::asinh;
-    using std::pow;
+    using std::asinh, std::pow;
 
     constexpr auto zero = static_cast<T>(0);
 
@@ -1450,7 +1439,7 @@ cuda_fn mc<T> asinh(mc<T> x)
         //
         // where f(x) = asinh(x) and f'(x) = 1 / sqrt(1 + x^2).
 
-        auto dasinh = [](T x) { using std::sqrt; using std::pow; return 1 / sqrt(1 + pow(x, 2)); };
+        auto dasinh = [](T x) { using std::sqrt, std::pow; return 1 / sqrt(1 + pow(x, 2)); };
 
         {
             // cv:
@@ -1510,8 +1499,7 @@ cuda_fn mc<T> acosh(mc<T> x)
 template<typename T>
 cuda_fn mc<T> atanh(mc<T> x)
 {
-    using std::atanh;
-    using std::pow;
+    using std::atanh, std::pow;
 
     constexpr auto zero = static_cast<T>(0);
 
@@ -1615,10 +1603,7 @@ cuda_fn mc<T> log(mc<T> x)
 template<typename T>
 cuda_fn mc<T> erf(mc<T> x)
 {
-    using std::erf;
-    using std::exp;
-    using std::pow;
-    using std::sqrt;
+    using std::erf, std::exp, std::pow, std::sqrt;
 
     constexpr auto zero = static_cast<T>(0);
 
@@ -1653,9 +1638,7 @@ cuda_fn mc<T> erf(mc<T> x)
         // where f(x) = erf(x) and f'(x) = 2 / sqrt(pi) * exp(-x^2)
 
         auto derf = [](T x) {
-            using std::sqrt;
-            using std::exp;
-            using std::pow;
+            using std::exp,  std::pow, std::sqrt;
             return 2 * exp(-pow(x, 2)) / sqrt(std::numbers::pi);
         };
 
