@@ -180,6 +180,7 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
         assert(contains(pow(x, 5), pow(x_sample, 5)));
         assert(contains(abs(x), abs(x_sample)));
         assert(contains(exp(x), exp(x_sample)));
+        assert(contains(abs(x), abs(x_sample)));
         assert(contains(fabs(x), fabs(x_sample)));
         assert(contains(neg(x), -x_sample));
         assert(contains(sqr(x), x_sample * x_sample));
@@ -278,12 +279,19 @@ __global__ void test_fn_kernel()
     auto ras = rastrigin2d(ras_x, ras_y);
     assert(ras.cv >= 0.0);
     assert(inf(ras) >= 0.0);
+
+    mc<double> a({ .lb = 0.7042016756583301, .cv = 0.7042016756583301, .cc = 0.7042016756583301, .ub = 0.7238093671679029 });
+    mc<double> b(0.6617671655226747);
+    auto c = a * b;
+    assert(c.cv <= c.cc);
+    c = sin(a);
+    assert(c.cv <= c.cc);
 }
 
 void test_bounds([[maybe_unused]] cudaStream_t stream)
 {
     constexpr int n_samples = 512;
-    constexpr int n_xs      = 14;
+    constexpr int n_xs      = 15;
 
     mc<double> xs[n_xs] = {
         //                  lb,                  cv,                   cc,                   ub
@@ -301,6 +309,7 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
         {                 -1.0,                 0.3,                  0.5,                  4.0 },
         {                 -4.0,                 0.3,                  0.5,                  1.0 },
         { 0x1.6636b09e7047p-33, 0x1.b6b00005212bp-1, 0x1.b6b0000580578p-1, 0x1.b6b00005a1b54p-1 },
+        {   0.7042016756583301,  0.7042016756583301,   0.7042016756583301,   0.7238093671679029 },
     };
 
     mc<double> *d_xs;
@@ -310,10 +319,11 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
     contains_samples_check_univariate<<<n_samples, n_xs>>>(d_xs, n_xs, n_samples);
 
     mc<double> *d_ys;
-    constexpr int n_ys  = 2;
+    constexpr int n_ys  = 3;
     mc<double> ys[n_ys] = {
         { -1.0, -0.5, 0.5, 3.0 },
         { 0.0, 0.5, 2.5, 3.0 },
+        { 0.6617671655226747, 0.6617671655226747, 0.6617671655226747, 0.6617671655226747 },
     };
 
     CUDA_CHECK(cudaMalloc(&d_ys, n_ys * sizeof(mc<double>)));
