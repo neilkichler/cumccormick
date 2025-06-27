@@ -991,7 +991,7 @@ cuda_fn mc<T> cos(mc<T> x)
 
             if (x_cv_lb_1 >= 0.5 * pi) {
                 // convex region
-                cv = next_after(cos(x_cv), -one); // TODO: might need another rounding here
+                cv = next_after(next_after(cos(x_cv), -one), -one);
             } else if (x_cv_lb_1 >= -0.5 * pi && x_cv_ub_1 <= 0.5 * pi) {
                 // concave region
                 cv = chord_of_concave(x_cv, x_cv_lb, x_cv_ub, cos(x_cv_lb), cos(x_cv_ub));
