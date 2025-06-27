@@ -162,10 +162,10 @@ __global__ void contains_samples_check_univariate(mc<T> *xs, int n_x, std::integ
     int i = blockIdx.x;
     int j = threadIdx.x;
 
-    auto contains = [](mc<T> y_mc, T y) {
+    auto contains = [i](mc<T> y_mc, T y) {
         if (!(y_mc.cv <= y && y <= y_mc.cc)) {
-            printf("[E] Invalid bounds: y.cv = %.15g, y = %.15g, y.cc = %.15g\n", y_mc.cv, y, y_mc.cc);
-            printf("[E] Invalid bounds: y.cv = %a, y = %a, y.cc = %a\n", y_mc.cv, y, y_mc.cc);
+            printf("[E][%d] Invalid bounds: y.cv = %.15g, y = %.15g, y.cc = %.15g\n", i, y_mc.cv, y, y_mc.cc);
+            printf("[E][%d] Invalid bounds: y.cv = %a, y = %a, y.cc = %a\n", i, y_mc.cv, y, y_mc.cc);
         }
         return y_mc.cv <= y && y <= y_mc.cc;
     };
