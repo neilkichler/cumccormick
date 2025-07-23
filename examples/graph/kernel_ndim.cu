@@ -1,7 +1,3 @@
-#include <array>
-#include <cstdio>
-#include <vector>
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 
@@ -69,7 +65,7 @@ int main()
         }
         // double v = 0;
         // xs[i]    = { .cv = v, .cc = v, .box = { .lb = v, .ub = v } };
-        // printf("setting xs[i]: %d %f %f %f\n", i, xs[i].cv, xs[i].cc, xs[i].box.ub);
+        // println("setting xs[{}]: {} {} {} {}", i, xs[i].cv, xs[i].cc, xs[i].box.ub);
     }
 
     CUDA_CHECK(cudaMemcpy(d_xs, xs, n_elems * n_vars * sizeof(*d_xs), cudaMemcpyHostToDevice));
@@ -86,7 +82,7 @@ int main()
     CUDA_CHECK(cudaDeviceSynchronize());
 
     auto r = res[0];
-    printf("custom([0, (0, 0), 0]) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("custom([0, (0, 0), 0]) = {}", r);
 
     // Second run
     xs[0] = { 0.0, 0.5, 1.0, 2.0 };
@@ -99,7 +95,7 @@ int main()
     CUDA_CHECK(cudaDeviceSynchronize());
 
     r = res[0];
-    printf("custom([0.0, (0.5, 1.0), 2.0]) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("custom([0, (0.5, 1.0), 2.0]) = {}", r);
 
     CUDA_CHECK(cudaFree(d_xs));
     CUDA_CHECK(cudaFree(d_res));

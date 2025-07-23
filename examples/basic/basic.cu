@@ -22,14 +22,14 @@ __global__ void kernel(auto *xs, auto *ys, auto *res, std::integral auto n)
 int main()
 {
     constexpr int n = 256;
-    using T = mc<double>;
+    using T         = mc<double>;
     T xs[n], ys[n], res[n];
 
     // generate dummy data
     for (int i = 0; i < n; i++) {
         double v = i;
-        xs[i] = {{ .lb = -v, .cv = -v, .cc = v, .ub = v }};
-        ys[i] = {{ .lb = -v, .cv = -v, .cc = v, .ub = v }};
+        xs[i]    = { { .lb = -v, .cv = -v, .cc = v, .ub = v } };
+        ys[i]    = { { .lb = -v, .cv = -v, .cc = v, .ub = v } };
     }
 
     mc<double> *d_xs, *d_ys, *d_res;
@@ -45,7 +45,7 @@ int main()
     CUDA_CHECK(cudaMemcpy(res, d_res, n * sizeof(*res), cudaMemcpyDeviceToHost));
 
     auto r = res[0];
-    printf("beale(0, 0) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("beale(0, 0) = {:3.4f}", r);
 
     CUDA_CHECK(cudaFree(d_xs));
     CUDA_CHECK(cudaFree(d_ys));

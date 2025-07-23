@@ -4,11 +4,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include <cumccormick/cumccormick.cuh>
-#include <cumccormick/format.h>
-
-#include <iomanip>
-#include <iostream>
 #include <numbers>
 
 template<typename T>
@@ -92,12 +87,11 @@ int main()
     bs_kernel<<<n, 1>>>(d_xs, d_res, n);
     CUDA_CHECK(cudaMemcpy(res, d_res, n * sizeof(*res), cudaMemcpyDeviceToHost));
 
-    std::cout << "Black Scholes call option price for r=0.01, S0=100, K=95, sigma=0.5, and" << std::endl;
-    std::cout << std::fixed << std::setprecision(3);
+    println("Black Scholes call option price for r=0.01, S0=100, K=95, sigma=0.5, and");
 
     for (auto i = 0; i < n; i++) {
         auto r = res[i];
-        std::cout << "t=" << xs[i].tau.cv << " -> " << r << std::endl;
+        println("t={} -> {:.3f}", xs[i].tau.cv, r);
     }
 
     CUDA_CHECK(cudaFree(d_xs));

@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdio>
+#include <iostream>
 #include <span>
 #include <vector>
 
@@ -70,7 +71,7 @@ void launch(auto &&user_kernel, std::span<mc<T>> xs, std::span<mc<T>> ys)
 
     printf("Results: \n");
     for (auto r : res) {
-        printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+        println("{}", r);
     }
 }
 

@@ -1,5 +1,4 @@
 #include <array>
-#include <cstdio>
 #include <vector>
 
 #include <cuda.h>
@@ -100,7 +99,7 @@ int main()
     CUDA_CHECK(cudaMemcpy(res, d_res, n * sizeof(*res), cudaMemcpyDeviceToHost));
 
     auto r = res[0];
-    printf("rosenbrok(0, 0) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("rosenbrok(0, 0) = {}", r);
 
     xs[0] = { -8.0, -4.96, 4.25, 8.0 };
 
@@ -113,10 +112,10 @@ int main()
     CUDA_CHECK(cudaMemcpy(res, d_res, n * sizeof(*res), cudaMemcpyDeviceToHost));
 
     r = res[0];
-    printf("rosenbrok(0, 0) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("rosenbrok(0, 0) = {}", r);
 
 #else
-    printf("inside else\n");
+    println("inside else");
     T *xs;
     T *ys;
     T *res;
@@ -140,9 +139,9 @@ int main()
     CUDA_CHECK(cudaDeviceSynchronize());
 
     auto r = res[0];
-    printf("rosenbrok([0, (0, 0), 0]) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("rosenbrok([0, (0, 0), 0]) = {}", r);
     r = res[1];
-    printf("rosenbrok([-1, (-1, 1), 1]) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("rosenbrok([-1, (-1, 1), 1]) = {}", r);
 
     // Second run
     xs[0] = { -8.0, -4.96, 4.25, 8.0 };
@@ -156,7 +155,7 @@ int main()
     CUDA_CHECK(cudaDeviceSynchronize());
 
     r = res[0];
-    printf("rosenbrok(0, 0) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("rosenbrok(0, 0) = {}", r);
 
 #endif
 

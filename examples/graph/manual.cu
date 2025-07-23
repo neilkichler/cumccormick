@@ -1,5 +1,4 @@
 #include <array>
-#include <cstdio>
 #include <vector>
 
 #include <cuda.h>
@@ -227,7 +226,7 @@ void graph_example(cuda_ctx ctx)
     cudaGraphNode_t *nodes = nullptr;
     size_t n_nodes;
     CUDA_CHECK(cudaGraphGetNodes(graph, nodes, &n_nodes));
-    printf("CUDA manually created %zu nodes for the graph.\n\n", n_nodes);
+    println("CUDA manually created {} nodes for the graph.\n", n_nodes);
 
     cudaGraphExec_t graph_exec;
     cudaStream_t g_stream = ctx.streams[0];
@@ -235,11 +234,11 @@ void graph_example(cuda_ctx ctx)
     CUDA_CHECK(cudaGraphLaunch(graph_exec, g_stream));
     CUDA_CHECK(cudaStreamSynchronize(g_stream));
 
-    printf("Results (1st Capture): \n");
+    println("Results (1st Capture): ");
     auto r = res[0];
-    printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("{}\n", r);
     r = res[1];
-    printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("{}", r);
 
     //
     // Second capture
@@ -250,9 +249,9 @@ void graph_example(cuda_ctx ctx)
     CUDA_CHECK(cudaGraphLaunch(graph_exec, g_stream));
     CUDA_CHECK(cudaStreamSynchronize(g_stream));
 
-    printf("Results (2nd Capture): \n");
+    println("Results (2nd Capture): ");
     r = res[0];
-    printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("{}", r);
 
     CUDA_CHECK(cudaFree(d_xs));
     CUDA_CHECK(cudaFree(d_ys));

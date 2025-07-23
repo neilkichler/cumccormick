@@ -1,6 +1,5 @@
 #include <array>
 #include <cstdio>
-#include <vector>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -181,7 +180,8 @@ template<typename T>
 __global__ void k_print(mc<T> *res, int n)
 {
     for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-        printf("[%d] res is: " MCCORMICK_FORMAT "\n", i, res[i].box.lb, res[i].cv, res[i].cc, res[i].box.ub);
+        // printf("[%d] res is: " MCCORMICK_FORMAT "\n", i, res[i].box.lb, res[i].cv, res[i].cc, res[i].box.ub);
+        printf("%s", std::format("[{}] res is: {}\n", res[i]).c_str());
 
         // auto r = res[i];
 
@@ -431,7 +431,7 @@ void streaming_example(cuda_ctx ctx)
     cudaGraphNode_t *nodes = nullptr;
     size_t n_nodes;
     CUDA_CHECK(cudaGraphGetNodes(graph, nodes, &n_nodes));
-    printf("Stream capture generated %zu nodes for the graph.\n\n", n_nodes);
+    println("Stream capture generated {} nodes for the graph.\n", n_nodes);
 
     cudaGraphExec_t graph_exe;
     CUDA_CHECK(cudaGraphInstantiate(&graph_exe, graph, nullptr, nullptr, 0));
@@ -444,12 +444,12 @@ void streaming_example(cuda_ctx ctx)
     CUDA_CHECK(cudaMemcpy(res, d_res, n_xs * sizeof(mc<T>), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaDeviceSynchronize());
 
-    printf("Results (1st Capture): \n");
+    println("Results (1st Capture): ");
     // for (auto r : res) {
     //     printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
     // }
     auto r = res[0];
-    printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("{}", r);
     // r = res[1];
     // printf("rosenbrok([-1, (-1, 1), 1]) = " MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
 
@@ -492,12 +492,12 @@ void streaming_example(cuda_ctx ctx)
     // CUDA_CHECK(cudaMemcpy(res.data(), d_res, n_xs * sizeof(mc<T>), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(res, d_res, n_xs * sizeof(mc<T>), cudaMemcpyDeviceToHost));
 
-    printf("Results (2nd Capture): \n");
+    println("Results (2nd Capture): ");
     // for (auto r : res) {
     //     printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
     // }
     r = res[0];
-    printf(MCCORMICK_FORMAT "\n", r.box.lb, r.cv, r.cc, r.box.ub);
+    println("{}", r);
 
     // CUDA_CHECK(cudaGraphDebugDotPrint(graph, "stream_capture_2.dot", 0));
 
