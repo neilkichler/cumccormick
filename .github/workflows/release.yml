@@ -1,0 +1,50 @@
+name: Release on GitHub with automatic single-header and header-only builds
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history
+
+      - name: Set up Python # required for generation of single-header
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create single-header library
+        run: |
+          python3 tools/single-header.py
+
+      - name: Create header-only library as folder
+        run: |
+          git mv include/cumccormick cumccormick
+          git mv LICENSE cumccormick
+          git mv README.md cumccormick
+
+      - name: Zip header-only library
+        run: |
+          zip -r cumccormick.zip cumccormick
+
+      - name: Create compressed tarball header-only library
+        run: |
+          tar -czf cumccormick.tar.gz cumccormick
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            cumccormick.zip
+            cumccormick.tar.gz
+            cumccormick.cuh
