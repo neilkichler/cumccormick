@@ -33,6 +33,7 @@ struct mccormick
 
     constexpr mccormick() = default;
     constexpr mccormick(T p)                    : cv(p)       , cc(p)       , box(p)                { }
+    constexpr mccormick(I box)                  : cv(box.lb)  , cc(box.ub)  , box(box)              { }
     constexpr mccormick(T cv, T cc)             : cv(cv)      , cc(cc)      , box(cv, cc)           { }
     constexpr mccormick(T x, I box)             : cv(x)       , cc(x)       , box(box)              { }
     constexpr mccormick(T cv, T cc, I box)      : cv(cv)      , cc(cc)      , box(box)              { }

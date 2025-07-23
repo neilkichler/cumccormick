@@ -8,6 +8,7 @@ set(headers
     "${LIB_PATH}/cumccormick.h"
     "${LIB_PATH}/format.h"
     "${LIB_PATH}/mccormick.h"
+    "${LIB_PATH}/numbers.h"
 )
 
 add_library(cumccormick "main.cu" ${headers})
