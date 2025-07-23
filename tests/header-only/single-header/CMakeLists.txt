@@ -8,7 +8,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include(FetchContent)
 FetchContent_Declare(
   cuinterval
-  GIT_REPOSITORY git@github.com:neilkichler/cuinterval.git
+  GIT_REPOSITORY https://github.com/neilkichler/cuinterval.git
   GIT_TAG main
 )
 FetchContent_MakeAvailable(cuinterval)
