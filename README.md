@@ -71,7 +71,7 @@ CPMAddPackage("gh:neilkichler/cumccormick@0.1.0")
 include(FetchContent)
 FetchContent_Declare(
   cumccormick
-  GIT_REPOSITORY git@github.com:neilkichler/cumccormick.git
+  GIT_REPOSITORY https://github.com/neilkichler/cumccormick.git
   GIT_TAG v0.1.0
 )
 FetchContent_MakeAvailable(cumccormick)
