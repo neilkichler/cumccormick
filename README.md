@@ -1,4 +1,13 @@
-<h1 align='center'>CuMcCormick</h1>
+<h1 align='center'>CuMcCormick
+
+[![Cpp Version](https://img.shields.io/badge/requires-C++20-blue)](https://github.com/neilkichler/cumccormick/tree/main?tab=readme-ov-file#build-requirements)
+[![CUDA Version](https://img.shields.io/badge/CUDA-12+-8A2BE2?logo=nvidia)](https://github.com/neilkichler/cumccormick/tree/main?tab=readme-ov-file#build-requirements)
+[![CMake Version](https://img.shields.io/badge/CMake-3.25.2+-blue?logo=cmake)](https://github.com/neilkichler/cumccormick/tree/main?tab=readme-ov-file#build-requirements)
+[![Docs](https://img.shields.io/badge/documentation-latest-8A2BE2)](https://neilkichler.github.io/cumccormick)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16367456.svg)](https://doi.org/10.5281/zenodo.16367456)
+[![GitHub License](https://img.shields.io/github/license/neilkichler/cuinterval)](https://github.com/neilkichler/cuinterval/blob/main/LICENSE)
+
+</h1>
 
 CuMcCormick is a CUDA library for McCormick relaxations.
 
