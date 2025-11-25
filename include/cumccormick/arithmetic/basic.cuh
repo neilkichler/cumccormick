@@ -1049,8 +1049,7 @@ cuda_fn mc<T> cos_box(mc<T> x)
 template<typename T>
 cuda_fn mc<T> sin(mc<T> x)
 {
-    constexpr mc<T> pi_2 { 0x1.921fb54442d17p+0, 0x1.921fb54442d19p+0 };
-    return cos(x - pi_2);
+    return cos(x - pi_2_v<mc<T>>);
 }
 
 template<typename T>
@@ -1320,8 +1319,7 @@ cuda_fn mc<T> asin(mc<T> x)
 template<typename T>
 cuda_fn mc<T> acos(mc<T> x)
 {
-    constexpr mc<T> pi_2 { 0x1.921fb54442d17p+0, 0x1.921fb54442d19p+0 };
-    return asin(-x) + pi_2;
+    return asin(-x) + pi_2_v<mc<T>>;
 }
 
 template<typename T>
