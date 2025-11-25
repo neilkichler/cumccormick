@@ -270,7 +270,7 @@ template<typename T>
 cuda_fn mc<T> div(mc<T> a, mc<T> b)
 {
     if (a == b) {
-        return mc<T>{1.0};
+        return mc<T> { 1.0 };
     }
 
     // TODO: implement tighter relaxation
@@ -311,7 +311,7 @@ cuda_fn mc<T> sqr(mc<T> x)
         midcc = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
     }
 
-    // below is symbolic simplification of chord_of_convex(midcc, inf(x), sup(x), sqr(inf(x)), sqr(sup(x))). 
+    // below is symbolic simplification of chord_of_convex(midcc, inf(x), sup(x), sqr(inf(x)), sqr(sup(x))).
     T cc = sub_up(mul_up(add_up(inf(x), sup(x)), midcc), mul_down(inf(x), sup(x)));
     return { { .cv  = mul_down(midcv, midcv),
                .cc  = cc,
@@ -1638,7 +1638,7 @@ cuda_fn mc<T> erf(mc<T> x)
         // where f(x) = erf(x) and f'(x) = 2 / sqrt(pi) * exp(-x^2)
 
         auto derf = [](T x) {
-            using std::exp,  std::pow, std::sqrt;
+            using std::exp, std::pow, std::sqrt;
             return 2 * exp(-pow(x, 2)) / sqrt(std::numbers::pi);
         };
 
