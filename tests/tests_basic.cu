@@ -280,12 +280,58 @@ __global__ void test_fn_kernel()
     assert(ras.cv >= 0.0);
     assert(inf(ras) >= 0.0);
 
-    mc<double> a({ .lb = 0.7042016756583301, .cv = 0.7042016756583301, .cc = 0.7042016756583301, .ub = 0.7238093671679029 });
-    mc<double> b(0.6617671655226747);
-    auto c = a * b;
-    assert(c.cv <= c.cc);
-    c = sin(a);
-    assert(c.cv <= c.cc);
+    {
+        mc<double> a({ .lb = 0.7042016756583301, .cv = 0.7042016756583301, .cc = 0.7042016756583301, .ub = 0.7238093671679029 });
+        mc<double> b(0.6617671655226747);
+        auto c = a * b;
+        assert(c.cv <= c.cc);
+        c = sin(a);
+        assert(c.cv <= c.cc);
+    }
+
+    { // unit test recip
+        auto infty = std::numeric_limits<double>::infinity();
+        {
+            mc<double> a({ .lb = -1.0, .cv = 0.0, .cc = 0.0, .ub = 1.0 });
+            auto b = recip(a);
+            assert(inf(b) == -infty);
+            assert(cv(b) == -infty);
+            assert(cc(b) == +infty);
+            assert(sup(b) == +infty);
+        }
+        {
+            mc<double> a({ .lb = -1.0, .cv = 0.0, .cc = 0.0, .ub = 0.0 });
+            auto b = recip(a);
+            assert(inf(b) == -infty);
+            assert(cv(b) == -infty);
+            assert(cc(b) == -infty); // see implementation for explanation
+            assert(sup(b) == -1.0);
+        }
+        {
+            mc<double> a({ .lb = -1.0, .cv = -0.5, .cc = -0.5, .ub = 0.0 });
+            auto b = recip(a);
+            assert(inf(b) == -infty);
+            assert(cv(b) == -infty);
+            assert(cc(b) == -2.0);
+            assert(sup(b) == -1.0);
+        }
+        {
+            mc<double> a({ .lb = 0.0, .cv = 0.0, .cc = 0.0, .ub = 1.0 });
+            auto b = recip(a);
+            assert(inf(b) == 1.0);
+            assert(cv(b) == infty);
+            assert(cc(b) == infty);
+            assert(sup(b) == infty);
+        }
+        {
+            mc<double> a({ .lb = 0.0, .cv = 0.5, .cc = 0.5, .ub = 1.0 });
+            auto b = recip(a);
+            assert(inf(b) == 1.0);
+            assert(cv(b) == 2.0);
+            assert(cc(b) == infty);
+            assert(sup(b) == infty);
+        }
+    }
 }
 
 void test_bounds([[maybe_unused]] cudaStream_t stream)

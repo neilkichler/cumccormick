@@ -228,37 +228,47 @@ cuda_fn mc<T> recip(mc<T> x)
 
     if (contains(x.box, zero)) {
         if (inf(x) < zero && zero == sup(x)) {
-            cv = neg_inf<T>();
-            cc = rcp_up(midcc);
             lb = neg_inf<T>();
+            cv = neg_inf<T>();
             ub = rcp_up(inf(x));
+            // NOTE: The interval library considers recip([-1, 0]) = [-inf, -1].
+            //       To be consistent with it, we use the same convention here.
+            //       The idea is to see how the value of cc behaves in the limit.
+            //       Since recip(x) is concave for x <= 0, we should have cc=-inf.
+            //       However, if midcc == 0 (x.cv == x.cc == 0), then rcp_up(midcc) = inf.
+            //       So, we check for this case explicitly.
+            //
+            //       An alternative that would be consistent with rcp_up(midcc) is if
+            //       we where to do the above only for -0 and not 0, but that is not
+            //       how the interval libraries behave (which are based on the IA IEEE standard).
+            cc = (midcc) ? rcp_up(midcc) : neg_inf<T>();
         } else if (inf(x) == zero && zero < sup(x)) {
+            lb = rcp_down(sup(x));
             cv = rcp_down(midcv);
             cc = pos_inf<T>();
-            lb = rcp_down(sup(x));
             ub = pos_inf<T>();
         } else if (inf(x) < zero && zero < sup(x)) {
+            lb = neg_inf<T>();
             cv = neg_inf<T>();
             cc = pos_inf<T>();
-            lb = inf(entire<T>());
-            ub = sup(entire<T>());
+            ub = pos_inf<T>();
         } else if (inf(x) == zero && zero == sup(x)) {
+            lb = inf(empty<T>());
             cv = std::numeric_limits<T>::quiet_NaN();
             cc = std::numeric_limits<T>::quiet_NaN();
-            lb = inf(empty<T>());
             ub = sup(empty<T>());
         }
     } else if (sup(x) < zero) {
         // for x < 0, recip is concave
+        lb = rcp_down(sup(x));
         cv = chord_of_concave(midcv, inf(x), sup(x), rcp_down(inf(x)), rcp_up(sup(x)));
         cc = rcp_up(midcc);
-        lb = rcp_down(sup(x));
         ub = rcp_up(inf(x));
     } else { // inf(x) > zero
         // for x > 0, recip is convex
+        lb = rcp_down(sup(x));
         cc = chord_of_convex(midcc, inf(x), sup(x), rcp_down(inf(x)), rcp_up(sup(x)));
         cv = rcp_down(midcv);
-        lb = rcp_down(sup(x));
         ub = rcp_up(inf(x));
     }
 
