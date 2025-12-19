@@ -481,6 +481,8 @@ cuda_fn mc<T> pown(mc<T> x, Number auto n)
     if (n == 0) {
         constexpr auto one = static_cast<T>(1);
         return { one };
+    } else if (n == -1) {
+        return recip(x);
     } else if (n == 1) {
         return x;
     } else if (n == 2) {
