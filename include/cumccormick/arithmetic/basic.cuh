@@ -284,6 +284,18 @@ cuda_fn T inf(mc<T> x)
 }
 
 template<typename T>
+cuda_fn T cv(mc<T> x)
+{
+    return x.cv;
+}
+
+template<typename T>
+cuda_fn T cc(mc<T> x)
+{
+    return x.cc;
+}
+
+template<typename T>
 cuda_fn T sup(mc<T> x)
 {
     return sup(x.box);
