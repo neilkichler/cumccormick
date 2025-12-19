@@ -340,6 +340,7 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
     constexpr int n_xs      = 15;
 
     mc<double> xs[n_xs] = {
+        // clang-format off
         //                  lb,                  cv,                   cc,                   ub
         {                  0.0,                 0.6,                 0.65,                  0.7 },
         {                  6.1,                 7.6,                 7.65,                  7.7 },
@@ -356,6 +357,7 @@ void test_bounds([[maybe_unused]] cudaStream_t stream)
         {                 -4.0,                 0.3,                  0.5,                  1.0 },
         { 0x1.6636b09e7047p-33, 0x1.b6b00005212bp-1, 0x1.b6b0000580578p-1, 0x1.b6b00005a1b54p-1 },
         {   0.7042016756583301,  0.7042016756583301,   0.7042016756583301,   0.7238093671679029 },
+        // clang-format on
     };
 
     mc<double> *d_xs;
