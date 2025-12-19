@@ -212,46 +212,57 @@ cuda_fn mc<T> recip(mc<T> x)
 {
     using namespace intrinsic;
 
+    // NOTE: Unfortunately, the compiler does not collapse the branches
+    //       of the interval and McCormick relaxations together, even
+    //       though they are exactly the same. So, we do it manually.
+
     constexpr auto zero = static_cast<T>(0);
 
-    T cv;
-    T cc;
+    if (empty(x.box)) {
+        return x;
+    }
+
+    T lb, ub, cv, cc;
     T midcv = mid(sup(x), x.cv, x.cc);
     T midcc = mid(inf(x), x.cv, x.cc);
 
     if (contains(x.box, zero)) {
         if (inf(x) < zero && zero == sup(x)) {
-            cv = intrinsic::neg_inf<T>();
+            cv = neg_inf<T>();
             cc = rcp_up(midcc);
+            lb = neg_inf<T>();
+            ub = rcp_up(inf(x));
         } else if (inf(x) == zero && zero < sup(x)) {
             cv = rcp_down(midcv);
-            cc = intrinsic::pos_inf<T>();
+            cc = pos_inf<T>();
+            lb = rcp_down(sup(x));
+            ub = pos_inf<T>();
         } else if (inf(x) < zero && zero < sup(x)) {
-            return { intrinsic::neg_inf<T>(),
-                     intrinsic::pos_inf<T>(),
-                     entire<T>() };
+            cv = neg_inf<T>();
+            cc = pos_inf<T>();
+            lb = inf(entire<T>());
+            ub = sup(entire<T>());
         } else if (inf(x) == zero && zero == sup(x)) {
-            // NOTE: Alternatively, we could return nans.
-            return {
-                { .cv  = intrinsic::neg_inf<T>(),
-                  .cc  = intrinsic::pos_inf<T>(),
-                  .box = entire<T>() }
-            };
+            cv = std::numeric_limits<T>::quiet_NaN();
+            cc = std::numeric_limits<T>::quiet_NaN();
+            lb = inf(empty<T>());
+            ub = sup(empty<T>());
         }
     } else if (sup(x) < zero) {
         // for x < 0, recip is concave
         cv = chord_of_concave(midcv, inf(x), sup(x), rcp_down(inf(x)), rcp_up(sup(x)));
         cc = rcp_up(midcc);
+        lb = rcp_down(sup(x));
+        ub = rcp_up(inf(x));
     } else { // inf(x) > zero
         // for x > 0, recip is convex
         cc = chord_of_convex(midcc, inf(x), sup(x), rcp_down(inf(x)), rcp_up(sup(x)));
         cv = rcp_down(midcv);
+        lb = rcp_down(sup(x));
+        ub = rcp_up(inf(x));
     }
 
-    // TODO: relaxation could be more efficient if we embed the IA into the different cases.
-    return { { .cv  = cv,
-               .cc  = cc,
-               .box = recip(x.box) } };
+    return { lb, cv, cc, ub };
 }
 
 template<typename T>
