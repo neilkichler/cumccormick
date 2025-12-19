@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 
+import argparse
 import datetime
 import os
 import re
@@ -25,9 +26,11 @@ file_header = """\
 """
 
 combined_headers = set()
+separate_libraries = False  # whether to treat cuinterval as a separate library, to be included with <cuinterval/header.h>
 
 # Adjust patterns to your needs
 internal_include_parser = re.compile(r"\s*#include <(cumccormick/.*)>.*")
+cuinterval_include_parser = re.compile(r"\s*#include <(cuinterval/.*)>.*")
 include_guard_start_parser = re.compile(r"\s*#ifndef\s+([A-Za-z_][A-Za-z_0-9]*)")
 include_guard_define_parser = re.compile(r"\s*#define\s+([A-Za-z_][A-Za-z_0-9]*)")
 include_guard_end_parser = re.compile(r"\s*#endif\s+\/\/\s+[A-Za-z_][A-Za-z_0-9]*")
@@ -67,6 +70,9 @@ def combine_files(out, filename: str) -> int:
             m = internal_include_parser.match(line)
             if m:
                 includes.append(m.group(1))
+            elif cuinterval_include_parser.match(line):  # Match cuinterval #include
+                # skip line
+                pass
             else:
                 # Non-include lines go into a buffer, to be written after recursion
                 code_lines.append(line)
@@ -138,6 +144,10 @@ def generate_single_header():
         header.write(formatted_file_header())
         header.write("#ifndef CUMCCORMICK_CUH\n")
         header.write("#define CUMCCORMICK_CUH\n")
+        header_cuinterval = (
+            "<cuinterval/cuinterval.h>" if separate_libraries else '"cuinterval.cuh"'
+        )
+        header.write("\n#include " + header_cuinterval + "\n\n")
         total = combine_files(header, starting_header)
         print(f"Combined {total} headers into {output_header}")
         header.write("#endif // CUMCCORMICK_CUH\n")
@@ -145,4 +155,14 @@ def generate_single_header():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--separate-libraries",
+        default=False,
+        help="Consider CuInterval as a separate library. "
+        "CuMcCormick will include cuinterval using <cuinterval/header.h> etc. (default: False)",
+        action="store_true",
+    )
+    args = parser.parse_args()
+    separate_libraries = args.separate_libraries
     generate_single_header()
