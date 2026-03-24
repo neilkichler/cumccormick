@@ -72,7 +72,7 @@ cmake --install build
 
 #### [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 ```cmake
-CPMAddPackage("gh:neilkichler/cumccormick@0.1.0")
+CPMAddPackage("gh:neilkichler/cumccormick@0.2.0")
 ```
 
 #### [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
@@ -81,7 +81,7 @@ include(FetchContent)
 FetchContent_Declare(
   cumccormick
   GIT_REPOSITORY https://github.com/neilkichler/cumccormick.git
-  GIT_TAG v0.1.0
+  GIT_TAG v0.2.0
 )
 FetchContent_MakeAvailable(cumccormick)
 ```
@@ -107,7 +107,7 @@ The documentation is available [here](https://neilkichler.github.io/cumccormick)
 ## Build
 
 ### Build Requirements
-We require C++20, CMake v3.25.2+, Ninja, and recent C++ and CUDA compilers.
+We require C++20, CMake 3.25.2+, Ninja, and recent C++ and CUDA compilers.
 
 #### Ubuntu
 ```bash
