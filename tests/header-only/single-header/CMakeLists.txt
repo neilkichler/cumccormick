@@ -15,7 +15,7 @@ FetchContent_MakeAvailable(cuinterval)
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/cumccormick.cuh
-    COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/single-header.py
+    COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/single-header.py --separate-libraries
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/single-header.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running Python script to generate single-header library"
