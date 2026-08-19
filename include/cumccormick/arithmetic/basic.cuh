@@ -1777,7 +1777,7 @@ cuda_fn mc<T> hull(mc<T> a, mc<T> b)
 {
     return { { .cv  = min(a, b).cv,
                .cc  = max(a, b).cc,
-               .box = convex_hull(a.box, b.box) } };
+               .box = hull(a.box, b.box) } };
 }
 
 #undef cuda_fn
