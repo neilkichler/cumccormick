@@ -16,11 +16,9 @@ template<typename T>
 using mc = mccormick<T>;
 
 template<typename T>
-concept Number = std::is_arithmetic_v<T>;
+concept Number = std::is_floating_point_v<T> or std::is_integral_v<T>;
 
 #define cuda_fn inline constexpr __device__
-
-cuda_fn auto value(Number auto x) { return x; }
 
 // This functions clips the convex and concave relaxation to the interval.
 // Sometimes the McCormick relaxation turns out worse than the interval bounds.
