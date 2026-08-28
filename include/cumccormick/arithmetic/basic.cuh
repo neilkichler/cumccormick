@@ -214,7 +214,9 @@ cuda_fn mc<T> recip(mc<T> x)
     //       of the interval and McCormick relaxations together, even
     //       though they are exactly the same. So, we do it manually.
 
-    constexpr auto zero = static_cast<T>(0);
+    constexpr auto zero    = static_cast<T>(0);
+    constexpr auto pos_inf = std::numeric_limits<T>::infinity();
+    constexpr auto neg_inf = -std::numeric_limits<T>::infinity();
 
     if (empty(x.box)) {
         return x;
@@ -226,8 +228,8 @@ cuda_fn mc<T> recip(mc<T> x)
 
     if (contains(x.box, zero)) {
         if (inf(x) < zero && zero == sup(x)) {
-            lb = neg_inf<T>();
-            cv = neg_inf<T>();
+            lb = neg_inf;
+            cv = neg_inf;
             ub = rcp_up(inf(x));
             // NOTE: The interval library considers recip([-1, 0]) = [-inf, -1].
             //       To be consistent with it, we use the same convention here.
@@ -239,17 +241,17 @@ cuda_fn mc<T> recip(mc<T> x)
             //       An alternative that would be consistent with rcp_up(midcc) is if
             //       we where to do the above only for -0 and not 0, but that is not
             //       how the interval libraries behave (which are based on the IA IEEE standard).
-            cc = (midcc) ? rcp_up(midcc) : neg_inf<T>();
+            cc = (midcc == zero) ? neg_inf : rcp_up(midcc);
         } else if (inf(x) == zero && zero < sup(x)) {
             lb = rcp_down(sup(x));
             cv = rcp_down(midcv);
-            cc = pos_inf<T>();
-            ub = pos_inf<T>();
+            cc = pos_inf;
+            ub = pos_inf;
         } else if (inf(x) < zero && zero < sup(x)) {
-            lb = neg_inf<T>();
-            cv = neg_inf<T>();
-            cc = pos_inf<T>();
-            ub = pos_inf<T>();
+            lb = neg_inf;
+            cv = neg_inf;
+            cc = pos_inf;
+            ub = pos_inf;
         } else if (inf(x) == zero && zero == sup(x)) {
             lb = inf(empty<T>());
             cv = std::numeric_limits<T>::quiet_NaN();
@@ -379,8 +381,8 @@ cuda_fn mc<T> exp(mc<T> x)
     using std::exp;
 
     // TODO: error in exp not accounted for in secant computation
-    T cc = exp(sup(x)) == intrinsic::pos_inf<T>()
-        ? intrinsic::pos_inf<T>()
+    T cc = exp(sup(x)) == pos_inf<T>()
+        ? std::numeric_limits<T>::infinity()
         : chord_of_convex(x.cc, inf(x), sup(x), exp(inf(x)), exp(sup(x)));
 
     return { { .cv  = next_after(exp(x.cv), static_cast<T>(0)),
@@ -444,7 +446,7 @@ cuda_fn mc<T> pown_even(mc<T> x, Number auto n)
             midcv = (abs(inf(x)) >= abs(sup(x))) ? x.cv : x.cc;
             return {
                 { .cv  = pow(midcv, n),
-                  .cc  = intrinsic::pos_inf<T>(),
+                  .cc  = std::numeric_limits<T>::infinity(),
                   .box = pown(x.box, n) }
             };
         }
@@ -509,8 +511,8 @@ cuda_fn mc<T> pown(mc<T> x, Number auto n)
                 cc = pow(sup(x), n) * ((x.cc - inf(x)) / (sup(x) - inf(x))) + pow(min(zero, x.cc), n);
             } else {
                 return {
-                    { .cv  = intrinsic::pos_inf<T>(),
-                      .cc  = intrinsic::neg_inf<T>(),
+                    { .cv  = std::numeric_limits<T>::infinity(),
+                      .cc  = -std::numeric_limits<T>::infinity(),
                       .box = entire<T>() }
                 };
             }
@@ -706,7 +708,7 @@ cuda_fn T root(auto &&f, auto &&step, T x0, T lb, T ub, solver_options<T> option
     }
 
     T x       = mid(x0, lb, ub);
-    T delta_x = intrinsic::pos_inf<T>();
+    T delta_x = std::numeric_limits<T>::infinity();
 
     auto terminate = [options](auto f_error, auto x, auto x_prev, Number auto i) {
         auto [maxiter, atol, rtol] = options;
@@ -1623,7 +1625,7 @@ cuda_fn mc<T> log(mc<T> x)
     T cv = chord_of_concave(midcv, inf(x), sup(x), log(inf(x)), log(sup(x)));
 
     if (inf(x) <= static_cast<T>(0)) {
-        cv = neg_inf<T>();
+        cv = -std::numeric_limits<T>::infinity();
     }
 
     return { { .cv  = cv,
