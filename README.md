@@ -72,7 +72,7 @@ cmake --install build
 
 #### [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 ```cmake
-CPMAddPackage("gh:neilkichler/cumccormick@0.2.0")
+CPMAddPackage("gh:neilkichler/cumccormick@0.3.0")
 ```
 
 #### [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
@@ -81,7 +81,7 @@ include(FetchContent)
 FetchContent_Declare(
   cumccormick
   GIT_REPOSITORY https://github.com/neilkichler/cumccormick.git
-  GIT_TAG v0.2.0
+  GIT_TAG v0.3.0
 )
 FetchContent_MakeAvailable(cumccormick)
 ```
